@@ -16,6 +16,7 @@
 
 package com.android.nfc;
 
+import android.annotation.NonNull;
 import android.app.ActivityManager;
 import android.app.Application;
 import android.app.BroadcastOptions;
@@ -75,6 +76,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
+import android.os.ParcelFileDescriptor;
 import android.os.PowerManager;
 import android.os.PowerManager.OnThermalStatusChangedListener;
 import android.os.Process;
@@ -1463,6 +1465,11 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
     }
 
     final class NfcAdapterService extends INfcAdapter.Stub {
+        private boolean isPrivileged(int callingUid) {
+            // Check for root uid to help invoking privileged APIs from rooted shell only.
+            return callingUid == Process.SYSTEM_UID || callingUid == Process.ROOT_UID;
+        }
+
         @Override
         public boolean enable() throws RemoteException {
             NfcPermissions.enforceAdminPermissions(mContext);
@@ -1525,7 +1532,7 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
             String packageName = getPackageNameFromUid(callingUid);
             if (packageName != null) {
                 if (isWalletRoleEnabled) {
-                    privilegedCaller = (callingUid == Process.SYSTEM_UID
+                    privilegedCaller = (isPrivileged(callingUid)
                             || packageName.equals(defaultWalletPackage));
                 } else {
                     String defaultPaymentService = Settings.Secure.getString(
@@ -1540,7 +1547,7 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
                     }
                 }
             } else {
-                privilegedCaller = (callingUid == Process.SYSTEM_UID);
+                privilegedCaller = isPrivileged(callingUid);
             }
             if (!privilegedCaller) {
                 NfcPermissions.enforceUserPermissions(mContext);
@@ -1801,10 +1808,10 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
             // Allow non-foreground callers with system uid or systemui
             String packageName = getPackageNameFromUid(callingUid);
             if (packageName != null) {
-                privilegedCaller = (callingUid == Process.SYSTEM_UID
+                privilegedCaller = (isPrivileged(callingUid)
                         || packageName.equals(SYSTEM_UI));
             } else {
-                privilegedCaller = (callingUid == Process.SYSTEM_UID);
+                privilegedCaller = isPrivileged(callingUid);
             }
             Log.d(TAG, "setReaderMode: uid=" + callingUid + ", packageName: "
                     + packageName + ", flags: " + flags);
@@ -2201,6 +2208,17 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
                 Log.e(TAG, "error when notifying HCE deactivated", ex);
             }
         }
+
+        @Override
+        public int handleShellCommand(@NonNull ParcelFileDescriptor in,
+                @NonNull ParcelFileDescriptor out, @NonNull ParcelFileDescriptor err,
+                @NonNull String[] args) {
+
+            NfcShellCommand shellCommand = new NfcShellCommand(NfcService.this, mContext);
+            return shellCommand.exec(this, in.getFileDescriptor(), out.getFileDescriptor(),
+                    err.getFileDescriptor(), args);
+        }
+
     }
 
     final class SeServiceDeathRecipient implements IBinder.DeathRecipient {
