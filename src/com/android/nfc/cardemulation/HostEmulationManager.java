@@ -237,6 +237,8 @@ public class HostEmulationManager {
                         }
                         if (serviceInfo.getShouldAutoTransact(dataStr)) {
                             allowOneTransaction();
+                            pollingFrame.putBoolean(
+                                    PollingFrame.KEY_POLLING_LOOP_TRIGGERED_AUTOTRANSACT, true);
                         }
                         UserHandle user = UserHandle.getUserHandleForUid(serviceInfo.getUid());
                         service = bindServiceIfNeededLocked(user.getIdentifier(),
