@@ -486,8 +486,10 @@ public class NativeNfcManager implements DeviceHost {
                                 pos + TLV_header_len + length));
             }
             if (pos + TLV_gain_offset <= data_len) {
-                byte gain = p_data[pos + TLV_gain_offset];
-                frame.putByte(PollingFrame.KEY_POLLING_LOOP_GAIN, gain);
+                int gain = Byte.toUnsignedInt(p_data[pos + TLV_gain_offset]);
+                if (gain != 0xFF) {
+                    frame.putInt(PollingFrame.KEY_POLLING_LOOP_GAIN, gain);
+                }
             }
             if (pos + TLV_timestamp_offset + 3 < data_len) {
                 int timestamp = ByteBuffer.wrap(p_data, pos + TLV_timestamp_offset, 4)
