@@ -26,7 +26,7 @@ import android.util.Log;
 import com.android.nfc.DeviceHost;
 import com.android.nfc.NfcDiscoveryParameters;
 import com.android.nfc.NfcVendorNciResponse;
-import com.android.nfc.NfcProprietaryCaps;
+
 import java.io.FileDescriptor;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -54,7 +54,7 @@ public class NativeNfcManager implements DeviceHost {
 
     private final Object mLock = new Object();
     private final HashMap<Integer, byte[]> mT3tIdentifiers = new HashMap<Integer, byte[]>();
-    private NfcProprietaryCaps mProprietaryCaps = null;
+
     private static final int MIN_POLLING_FRAME_TLV_SIZE = 5;
     private static final int TAG_FIELD_CHANGE = 0;
     private static final int TAG_NFC_A = 1;
@@ -90,7 +90,6 @@ public class NativeNfcManager implements DeviceHost {
     @Override
     public boolean initialize() {
         boolean ret = doInitialize();
-        mProprietaryCaps = NfcProprietaryCaps.createFromByteArray(getProprietaryCaps());
         mIsoDepMaxTransceiveLength = getIsoDepMaxTransceiveLength();
         return ret;
     }
