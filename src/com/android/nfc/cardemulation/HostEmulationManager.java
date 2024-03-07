@@ -623,13 +623,15 @@ public class HostEmulationManager {
     }
 
     void unbindPaymentServiceLocked() {
+        Log.d(TAG, "Unbinding payment service");
         if (mPaymentServiceBound) {
             mContext.unbindService(mPaymentConnection);
             mPaymentServiceBound = false;
-            mPaymentService = null;
-            mPaymentServiceName = null;
-            mPaymentServiceUserId = -1;
         }
+
+        mPaymentService = null;
+        mPaymentServiceName = null;
+        mPaymentServiceUserId = -1;
     }
 
     void bindPaymentServiceLocked(int userId, ComponentName service) {
@@ -658,10 +660,11 @@ public class HostEmulationManager {
             Log.d(TAG, "Unbinding from service " + mServiceName);
             mContext.unbindService(mConnection);
             mServiceBound = false;
-            mService = null;
-            mServiceName = null;
-            mServiceUserId = -1;
         }
+
+        mService = null;
+        mServiceName = null;
+        mServiceUserId = -1;
     }
 
     void launchTapAgain(ApduServiceInfo service, String category) {
@@ -715,20 +718,23 @@ public class HostEmulationManager {
             synchronized (mLock) {
                 /* Preferred Payment Service has been changed. */
                 if (!mLastBoundPaymentServiceName.equals(name)) {
+                    Log.i(TAG, "Ignoring bound payment service, " + name + " != "
+                            + mLastBoundPaymentServiceName);
                     return;
                 }
                 mPaymentServiceName = name;
                 mPaymentService = new Messenger(service);
+                Log.i(TAG, "Payment service bound: " + name);
             }
         }
 
         @Override
         public void onServiceDisconnected(ComponentName name) {
+            Log.i(TAG, "Payment service disconnected: " + name);
             synchronized (mLock) {
                 mPaymentService = null;
                 mPaymentServiceBound = false;
                 mPaymentServiceName = null;
-                mPaymentServiceUserId = -1;
             }
         }
     };
@@ -744,7 +750,7 @@ public class HostEmulationManager {
                 mService = new Messenger(service);
                 mServiceName = name;
                 mServiceBound = true;
-                Log.d(TAG, "Service bound");
+                Log.d(TAG, "Service bound: " + name);
                 mState = STATE_XFER;
                 // Send pending select APDU
                 if (mSelectApdu != null) {
@@ -765,11 +771,10 @@ public class HostEmulationManager {
         @Override
         public void onServiceDisconnected(ComponentName name) {
             synchronized (mLock) {
-                Log.d(TAG, "Service unbound");
+                Log.d(TAG, "Service unbound: " + name);
                 mService = null;
                 mServiceName = null;
                 mServiceBound = false;
-                mServiceUserId = -1;
             }
         }
     };
