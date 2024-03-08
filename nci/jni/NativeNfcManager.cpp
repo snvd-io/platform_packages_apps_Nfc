@@ -1110,7 +1110,7 @@ static jboolean nfcManager_isObserveModeEnabled(JNIEnv* e, jobject o) {
                    NCI_MSG_PROP_ANDROID,
                    NCI_QUERY_ANDROID_PASSIVE_OBSERVE_PARAM_SIZE,
                    NCI_QUERY_ANDROID_PASSIVE_OBSERVE};
-
+  SyncEventGuard guard(gNfaVsCommand);
   tNFA_STATUS status = NFA_SendRawVsCommand(sizeof(cmd), cmd, nfaVSCallback);
 
   if (status == NFA_STATUS_OK) {
@@ -1166,21 +1166,23 @@ static jboolean nfcManager_setObserveMode(JNIEnv* e, jobject o,
       static_cast<uint8_t>(enable != JNI_FALSE
                                ? NCI_ANDROID_PASSIVE_OBSERVE_PARAM_ENABLE
                                : NCI_ANDROID_PASSIVE_OBSERVE_PARAM_DISABLE)};
+  {
+    SyncEventGuard guard(gNfaVsCommand);
+    tNFA_STATUS status = NFA_SendRawVsCommand(sizeof(cmd), cmd, nfaVSCallback);
 
-  tNFA_STATUS status = NFA_SendRawVsCommand(sizeof(cmd), cmd, nfaVSCallback);
-
-  if (status == NFA_STATUS_OK) {
-    if (!gNfaVsCommand.wait(1000)) {
-      LOG(ERROR) << StringPrintf(
-          "%s: Timed out waiting for a response to set observe mode ",
-          __FUNCTION__);
+    if (status == NFA_STATUS_OK) {
+      if (!gNfaVsCommand.wait(1000)) {
+        LOG(ERROR) << StringPrintf(
+            "%s: Timed out waiting for a response to set observe mode ",
+            __FUNCTION__);
+        gVSCmdStatus = NFA_STATUS_FAILED;
+      }
+    } else {
+      LOG(DEBUG) << StringPrintf("%s: Failed to set observe mode ",
+                                 __FUNCTION__);
       gVSCmdStatus = NFA_STATUS_FAILED;
     }
-  } else {
-    LOG(DEBUG) << StringPrintf("%s: Failed to set observe mode ", __FUNCTION__);
-    gVSCmdStatus = NFA_STATUS_FAILED;
   }
-
   if (reenbleDiscovery) {
     startRfDiscovery(true);
   }
