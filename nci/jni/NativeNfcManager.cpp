@@ -144,6 +144,7 @@ static bool sRoutingInitialized = false;
 static bool sIsRecovering = false;
 static bool sIsAlwaysPolling = false;
 static std::vector<uint8_t> sRawVendorCmdResponse;
+static bool sEnableVendorNciNotifications = false;
 
 #define CONFIG_UPDATE_TECH_MASK (1 << 1)
 #define DEFAULT_TECH_MASK                                                  \
@@ -1066,30 +1067,34 @@ void static nfaVSCallback(uint8_t event, uint16_t param_len, uint8_t* p_param) {
       }
     } break;
     default: {
-      struct nfc_jni_native_data* nat = getNative(NULL, NULL);
-      if (!nat) {
-        LOG(ERROR) << StringPrintf("%s: cached nat is null", __FUNCTION__);
-        return;
+      if (sEnableVendorNciNotifications) {
+        struct nfc_jni_native_data* nat = getNative(NULL, NULL);
+        if (!nat) {
+          LOG(ERROR) << StringPrintf("%s: cached nat is null", __FUNCTION__);
+          return;
+        }
+        JNIEnv* e = NULL;
+        ScopedAttach attach(nat->vm, &e);
+        if (e == NULL) {
+          LOG(ERROR) << StringPrintf("%s: jni env is null", __FUNCTION__);
+          return;
+        }
+        ScopedLocalRef<jobject> dataJavaArray(e, e->NewByteArray(param_len));
+        if (dataJavaArray.get() == NULL) {
+          LOG(ERROR) << StringPrintf("%s: fail allocate array", __FUNCTION__);
+          return;
+        }
+        e->SetByteArrayRegion((jbyteArray)dataJavaArray.get(), 0, param_len,
+                              (jbyte*)(p_param));
+        if (e->ExceptionCheck()) {
+          e->ExceptionClear();
+          LOG(ERROR) << StringPrintf("%s failed to fill array", __FUNCTION__);
+          return;
+        }
+        e->CallVoidMethod(nat->manager,
+                          android::gCachedNfcManagerNotifyVendorSpecificEvent,
+                          (jint)event, (jint)param_len, dataJavaArray.get());
       }
-      JNIEnv* e = NULL;
-      ScopedAttach attach(nat->vm, &e);
-      if (e == NULL) {
-        LOG(ERROR) << StringPrintf("%s: jni env is null", __FUNCTION__);
-      return;
-      }
-      ScopedLocalRef<jobject> dataJavaArray(e, e->NewByteArray(param_len));
-      if (dataJavaArray.get() == NULL) {
-        LOG(ERROR) << StringPrintf("%s: fail allocate array", __FUNCTION__);
-        return;
-      }
-      e->SetByteArrayRegion((jbyteArray)dataJavaArray.get(), 0, param_len, (jbyte*)(p_param));
-      if (e->ExceptionCheck()) {
-        e->ExceptionClear();
-        LOG(ERROR) << StringPrintf("%s failed to fill array", __FUNCTION__);
-        return;
-      }
-      e->CallVoidMethod(nat->manager, android::gCachedNfcManagerNotifyVendorSpecificEvent,
-                        (jint)event, (jint)param_len, dataJavaArray.get());
     } break;
   }
 }
@@ -2222,6 +2227,13 @@ static void nfcManager_resetDiscoveryTech(JNIEnv* e, jobject o) {
   }
   nativeNfcTag_releaseRfInterfaceMutexLock();
 }
+
+static void ncfManager_nativeEnableVendorNciNotifications(JNIEnv* env,
+                                                          jobject o,
+                                                          jboolean enable) {
+  sEnableVendorNciNotifications = (enable == JNI_TRUE);
+}
+
 static jobject nfcManager_nativeSendRawVendorCmd(JNIEnv* env, jobject o,
                                                  jint mt, jint gid, jint oid,
                                                  jbyteArray payload) {
@@ -2400,6 +2412,8 @@ static JNINativeMethod gMethods[] = {
      (void*)nfcManager_nativeSendRawVendorCmd},
 
     {"getProprietaryCaps", "()[B", (void*)nfcManager_getProprietaryCaps},
+    {"enableVendorNciNotifications", "(Z)V",
+     (void*)ncfManager_nativeEnableVendorNciNotifications},
 };
 
 /*******************************************************************************
