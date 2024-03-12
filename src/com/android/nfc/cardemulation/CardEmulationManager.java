@@ -155,7 +155,6 @@ public class CardEmulationManager implements RegisteredServicesCache.Callback,
         return mNfcFCardEmulationInterface;
     }
 
-    @TargetApi(35)
     @FlaggedApi(android.nfc.Flags.FLAG_NFC_READ_POLLING_LOOP)
     public void onPollingLoopDetected(List<Bundle> pollingFrames) {
         mHostEmulationManager.onPollingLoopDetected(pollingFrames);
@@ -598,7 +597,7 @@ public class CardEmulationManager implements RegisteredServicesCache.Callback,
             NfcPermissions.validateUserId(userId);
             NfcPermissions.enforceUserPermissions(mContext);
             if (!isServiceRegistered(userId, service)) {
-                Log.e(TAG, "service ("+ service + ") isn't registed for user " + userId);
+                Log.e(TAG, "service ("+ service + ") isn't registered for user " + userId);
                 return false;
             }
             if (!mServiceCache.registerAidGroupForService(userId, Binder.getCallingUid(), service,
@@ -611,18 +610,59 @@ public class CardEmulationManager implements RegisteredServicesCache.Callback,
         }
 
         @Override
-        @TargetApi(35)
         @FlaggedApi(android.nfc.Flags.FLAG_NFC_READ_POLLING_LOOP)
         public boolean registerPollingLoopFilterForService(int userId, ComponentName service,
                 String pollingLoopFilter, boolean autoTransact) throws RemoteException {
             NfcPermissions.validateUserId(userId);
             NfcPermissions.enforceUserPermissions(mContext);
             if (!isServiceRegistered(userId, service)) {
-                Log.e(TAG, "service ("+ service + ") isn't registed for user " + userId);
+                Log.e(TAG, "service ("+ service + ") isn't registered for user " + userId);
                 return false;
             }
             return mServiceCache.registerPollingLoopFilterForService(userId, Binder.getCallingUid(),
-                service, pollingLoopFilter, autoTransact);
+                    service, pollingLoopFilter, autoTransact);
+        }
+
+        @Override
+        @FlaggedApi(android.nfc.Flags.FLAG_NFC_READ_POLLING_LOOP)
+        public boolean removePollingLoopFilterForService(int userId, ComponentName service,
+                String pollingLoopFilter) throws RemoteException {
+            NfcPermissions.validateUserId(userId);
+            NfcPermissions.enforceUserPermissions(mContext);
+            if (!isServiceRegistered(userId, service)) {
+                Log.e(TAG, "service ("+ service + ") isn't registered for user " + userId);
+                return false;
+            }
+            return mServiceCache.removePollingLoopFilterForService(userId, Binder.getCallingUid(),
+                    service, pollingLoopFilter);
+        }
+
+        @Override
+        @FlaggedApi(android.nfc.Flags.FLAG_NFC_READ_POLLING_LOOP)
+        public boolean registerPollingLoopPatternFilterForService(int userId, ComponentName service,
+                String pollingLoopPatternFilter, boolean autoTransact) throws RemoteException {
+            NfcPermissions.validateUserId(userId);
+            NfcPermissions.enforceUserPermissions(mContext);
+            if (!isServiceRegistered(userId, service)) {
+                Log.e(TAG, "service ("+ service + ") isn't registed for user " + userId);
+                return false;
+            }
+            return mServiceCache.registerPollingLoopPatternFilterForService(userId,
+                    Binder.getCallingUid(), service, pollingLoopPatternFilter, autoTransact);
+        }
+
+        @Override
+        @FlaggedApi(android.nfc.Flags.FLAG_NFC_READ_POLLING_LOOP)
+        public boolean removePollingLoopPatternFilterForService(int userId, ComponentName service,
+                String pollingLoopPatternFilter) throws RemoteException {
+            NfcPermissions.validateUserId(userId);
+            NfcPermissions.enforceUserPermissions(mContext);
+            if (!isServiceRegistered(userId, service)) {
+                Log.e(TAG, "service ("+ service + ") isn't registed for user " + userId);
+                return false;
+            }
+            return mServiceCache.removePollingLoopPatternFilterForService(userId,
+                    Binder.getCallingUid(), service, pollingLoopPatternFilter);
         }
 
         @Override
