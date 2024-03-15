@@ -49,7 +49,6 @@ public class RegisteredAidCache {
     static final String TAG = "RegisteredAidCache";
 
     static final boolean DBG = NfcProperties.debug_enabled().orElse(true);
-    private static final boolean VDBG = false; // turn on for local testing.
 
     static final int AID_ROUTE_QUAL_SUBSET = 0x20;
     static final int AID_ROUTE_QUAL_PREFIX = 0x10;
@@ -306,12 +305,12 @@ public class RegisteredAidCache {
             // If this service claims it's a payment AID, don't route it,
             // because it's not the default. Otherwise, add it to the list
             // but not as default.
-            if (VDBG) Log.d(TAG, "resolveAidLocked: (Ignoring handling service " +
+            if (DBG) Log.d(TAG, "resolveAidLocked: (Ignoring handling service " +
                     serviceAidInfo.service.getComponent() +
                     " because it's not the payment default.)");
         } else {
             if (serviceAidInfo.service.isCategoryOtherServiceEnabled()) {
-                if (VDBG) Log.d(TAG, "resolveAidLocked: " + serviceAidInfo.service.getComponent() +
+                if (DBG) Log.d(TAG, serviceAidInfo.service.getComponent() +
                         " is selected other service");
                 resolveInfo.services.add(serviceAidInfo.service);
             }
@@ -368,7 +367,7 @@ public class RegisteredAidCache {
 
             if (componentName.equals(mPreferredForegroundService) &&
                     userId == mUserIdPreferredForegroundService) {
-                if (VDBG) Log.d(TAG, "Prioritizing foreground services.");
+                if (DBG) Log.d(TAG, "Prioritizing foreground services.");
                 resolveInfo.services.add(serviceAidInfo.service);
                 if (serviceClaimsPaymentAid) {
                     resolveInfo.category = CardEmulation.CATEGORY_PAYMENT;
@@ -378,7 +377,7 @@ public class RegisteredAidCache {
                 if(userId == mUserIdDefaultWalletHolder
                     && componentName.getPackageName().equals(
                     mDefaultWalletHolderPackageName)) {
-                    if (VDBG) Log.d(TAG, "Prioritizing default wallet services.");
+                    if (DBG) Log.d(TAG, "Prioritizing default wallet services.");
                     resolveInfo.services.add(serviceAidInfo.service);
                     if (serviceClaimsPaymentAid) {
                         resolveInfo.category = CardEmulation.CATEGORY_PAYMENT;
@@ -609,7 +608,7 @@ public class RegisteredAidCache {
                 continue;
             }
             for (ApduServiceInfo service : entry.getValue()) {
-                if (VDBG) Log.d(TAG, "generateServiceMap component: " + service.getComponent());
+                if (DBG) Log.d(TAG, "generateServiceMap component: " + service.getComponent());
                 List<String> prefixAids = service.getPrefixAids();
                 List<String> subSetAids = service.getSubsetAids();
 

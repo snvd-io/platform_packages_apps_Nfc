@@ -77,7 +77,6 @@ public class RegisteredServicesCache {
     static final String XML_INDENT_OUTPUT_FEATURE = "http://xmlpull.org/v1/doc/features.html#indent-output";
     static final String TAG = "RegisteredServicesCache";
     static final boolean DEBUG = NfcProperties.debug_enabled().orElse(true);
-    private static final boolean VDBG = false; // turn on for local testing.
 
     final Context mContext;
     final AtomicReference<BroadcastReceiver> mReceiver;
@@ -163,7 +162,7 @@ public class RegisteredServicesCache {
             public void onReceive(Context context, Intent intent) {
                 final int uid = intent.getIntExtra(Intent.EXTRA_UID, -1);
                 String action = intent.getAction();
-                if (VDBG) Log.d(TAG, "Intent action: " + action);
+                if (DEBUG) Log.d(TAG, "Intent action: " + action);
 
                 if (RoutingOptionManager.getInstance().isRoutingTableOverrided()) {
                     if (DEBUG) Log.d(TAG, "Routing table overrided. Skip invalidateCache()");
@@ -253,14 +252,8 @@ public class RegisteredServicesCache {
         mUserHandles.removeAll(removeUserHandles);
     }
 
-    void dump(List<ApduServiceInfo> services) {
+    void dump(ArrayList<ApduServiceInfo> services) {
         for (ApduServiceInfo service : services) {
-            if (DEBUG) Log.d(TAG, service.toString());
-        }
-    }
-
-    void dump(ArrayList<ComponentName> services) {
-        for (ComponentName service : services) {
             if (DEBUG) Log.d(TAG, service.toString());
         }
     }
@@ -372,8 +365,6 @@ public class RegisteredServicesCache {
         if (validServices == null) {
             return;
         }
-        ArrayList<ApduServiceInfo> toBeAdded = new ArrayList<>();
-        ArrayList<ApduServiceInfo> toBeRemoved = new ArrayList<>();
         synchronized (mLock) {
             UserServices userServices = findOrCreateUserLocked(userId);
 
@@ -384,17 +375,18 @@ public class RegisteredServicesCache {
                 Map.Entry<ComponentName, ApduServiceInfo> entry =
                         (Map.Entry<ComponentName, ApduServiceInfo>) it.next();
                 if (!containsServiceLocked(validServices, entry.getKey())) {
-                    toBeRemoved.add(entry.getValue());
+                    Log.d(TAG, "Service removed: " + entry.getKey());
                     it.remove();
                 }
             }
             for (ApduServiceInfo service : validServices) {
-                toBeAdded.add(service);
+                if (DEBUG) Log.d(TAG, "Adding service: " + service.getComponent() +
+                        " AIDs: " + service.getAids());
                 userServices.services.put(service.getComponent(), service);
             }
 
             // Apply dynamic settings mappings
-            ArrayList<ComponentName> toBeRemovedComponent = new ArrayList<ComponentName>();
+            ArrayList<ComponentName> toBeRemoved = new ArrayList<ComponentName>();
             for (Map.Entry<ComponentName, DynamicSettings> entry :
                     userServices.dynamicSettings.entrySet()) {
                 // Verify component / uid match
@@ -402,7 +394,7 @@ public class RegisteredServicesCache {
                 DynamicSettings dynamicSettings = entry.getValue();
                 ApduServiceInfo serviceInfo = userServices.services.get(component);
                 if (serviceInfo == null || (serviceInfo.getUid() != dynamicSettings.uid)) {
-                    toBeRemovedComponent.add(component);
+                    toBeRemoved.add(component);
                     continue;
                 } else {
                     for (AidGroup group : dynamicSettings.aidGroups.values()) {
@@ -419,7 +411,7 @@ public class RegisteredServicesCache {
                 }
             }
             if (toBeRemoved.size() > 0) {
-                for (ComponentName component : toBeRemovedComponent) {
+                for (ComponentName component : toBeRemoved) {
                     Log.d(TAG, "Removing dynamic AIDs registered by " + component);
                     userServices.dynamicSettings.remove(component);
                 }
@@ -434,22 +426,11 @@ public class RegisteredServicesCache {
 
         mCallback.onServicesUpdated(userId, Collections.unmodifiableList(validServices),
                 validateInstalled);
-        if (VDBG) {
-            Log.i(TAG, "Services => ");
-            dump(validServices);
-        } else {
-            // dump only new services added or removed
-            Log.i(TAG, "New Services => ");
-            dump(toBeAdded);
-            Log.i(TAG, "Removed Services => ");
-            dump(toBeRemoved);
-        }
+        dump(validServices);
     }
 
     private void invalidateOther(int userId, List<ApduServiceInfo> validOtherServices) {
         Log.d(TAG, "invalidate : " + userId);
-        ArrayList<ComponentName> toBeAdded = new ArrayList<>();
-        ArrayList<ComponentName> toBeRemoved = new ArrayList<>();
         // remove services
         synchronized (mLock) {
             UserServices userServices = findOrCreateUserLocked(userId);
@@ -461,7 +442,7 @@ public class RegisteredServicesCache {
                 Map.Entry<ComponentName, OtherServiceStatus> entry = it.next();
                 if (!containsServiceLocked((ArrayList<ApduServiceInfo>) validOtherServices,
                         entry.getKey())) {
-                    toBeRemoved.add(entry.getKey());
+                    Log.d(TAG, "Service removed: " + entry.getKey());
                     needToWrite = true;
                     it.remove();
                 }
@@ -478,10 +459,8 @@ public class RegisteredServicesCache {
             isChecked = true;
 
             for (ApduServiceInfo service : validOtherServices) {
-                if (VDBG) {
-                    Log.d(TAG, "update valid otherService: " + service.getComponent()
-                            + " AIDs: " + service.getAids());
-                }
+                Log.d(TAG, "update valid otherService: " + service.getComponent()
+                        + " AIDs: " + service.getAids());
                 if (!service.hasCategory(CardEmulation.CATEGORY_OTHER)) {
                     Log.e(TAG, "service does not have other category");
                     continue;
@@ -491,9 +470,11 @@ public class RegisteredServicesCache {
                 OtherServiceStatus status = userServices.others.get(component);
 
                 if (status == null) {
-                    toBeAdded.add(service.getComponent());
+                    Log.d(TAG, "New other service");
                     status = new OtherServiceStatus(service.getUid(), isChecked);
                     needToWrite = true;
+                } else {
+                    Log.d(TAG, "Existed other service");
                 }
                 service.setCategoryOtherServiceEnabled(status.checked);
                 userServices.others.put(component, status);
@@ -502,16 +483,6 @@ public class RegisteredServicesCache {
             if (needToWrite) {
                 writeOthersLocked();
             }
-        }
-        if (VDBG) {
-            Log.i(TAG, "Other Services => ");
-            dump(validOtherServices);
-        } else {
-            // dump only new services added or removed
-            Log.i(TAG, "New Other Services => ");
-            dump(toBeAdded);
-            Log.i(TAG, "Removed Other Services => ");
-            dump(toBeRemoved);
         }
     }
 
