@@ -186,9 +186,6 @@ void initializeGlobalDebugEnabledFlag() {
   bool nfc_debug_enabled =
       (NfcConfig::getUnsigned(NAME_NFC_DEBUG_ENABLED, 1) != 0) ||
       property_get_bool("persist.nfc.debug_enabled", false);
-
-  android::base::SetMinimumLogSeverity(nfc_debug_enabled ? android::base::DEBUG
-                                                         : android::base::INFO);
 }
 
 void initializeRecoveryOption() {
