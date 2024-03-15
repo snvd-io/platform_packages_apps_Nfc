@@ -388,6 +388,7 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
     boolean mIsWlcEnabled;
     boolean mIsRWCapable;
     WlcListenerDeviceInfo mWlcListenerDeviceInfo;
+    public NfcDiagnostics  mNfcDiagnostics;
 
     // polling delay control variables
     private final int mPollDelayTime;
@@ -686,6 +687,8 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
 
         PackageManager pm = mContext.getPackageManager();
         mIsWatchType = pm.hasSystemFeature(PackageManager.FEATURE_WATCH);
+
+        mNfcDiagnostics = new NfcDiagnostics(mContext);
 
         if (pm.hasSystemFeature(PackageManager.FEATURE_VR_MODE_HIGH_PERFORMANCE) &&
                 !mIsWatchType) {
