@@ -31,7 +31,7 @@ import java.util.List;
 public class SystemCodeRoutingManager {
     static final String TAG = "SystemCodeRoutingManager";
 
-    static final boolean DBG = NfcProperties.debug_enabled().orElse(true);
+    static final boolean DBG = NfcProperties.debug_enabled().orElse(false);
 
     final Object mLock = new Object();
 

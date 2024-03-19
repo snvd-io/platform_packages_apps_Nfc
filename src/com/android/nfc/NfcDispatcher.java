@@ -82,7 +82,7 @@ import java.util.stream.Collectors;
  */
 class NfcDispatcher {
     private static final boolean DBG =
-            NfcProperties.debug_enabled().orElse(true);
+            NfcProperties.debug_enabled().orElse(false);
     private static final String TAG = "NfcDispatcher";
 
     static final int DISPATCH_SUCCESS = 1;

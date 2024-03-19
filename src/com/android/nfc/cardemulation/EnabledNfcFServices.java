@@ -34,7 +34,7 @@ import java.io.PrintWriter;
 
 public class EnabledNfcFServices implements com.android.nfc.ForegroundUtils.Callback {
     static final String TAG = "EnabledNfcFCardEmulationServices";
-    static final boolean DBG = NfcProperties.debug_enabled().orElse(true);
+    static final boolean DBG = NfcProperties.debug_enabled().orElse(false);
 
     final Context mContext;
     final RegisteredNfcFServicesCache mNfcFServiceCache;
