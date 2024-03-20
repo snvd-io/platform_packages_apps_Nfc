@@ -26,6 +26,7 @@ import android.util.Log;
 
 import com.android.nfc.DeviceHost;
 import com.android.nfc.NfcDiscoveryParameters;
+import com.android.nfc.NfcService;
 import com.android.nfc.NfcVendorNciResponse;
 import com.android.nfc.NfcProprietaryCaps;
 import java.io.FileDescriptor;
@@ -541,4 +542,8 @@ public class NativeNfcManager implements DeviceHost {
 
     @Override
     public native void enableVendorNciNotifications(boolean enabled);
+
+    private void notifyCommandTimeout() {
+        NfcService.getInstance().storeNativeCrashLogs();
+    }
 }
