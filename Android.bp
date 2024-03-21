@@ -80,7 +80,7 @@ android_app {
 android_app {
     name: "NfcNciApex",
     defaults: ["NfcNciDefaults"],
-    min_sdk_version: "VanillaIceCream",
+    min_sdk_version: "34", // should be 35 (making it 34 for compiling for `-next`)
     sdk_version: "module_current",
     certificate: "nfc",
     srcs: [
