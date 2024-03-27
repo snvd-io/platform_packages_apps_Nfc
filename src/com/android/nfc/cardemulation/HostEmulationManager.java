@@ -368,7 +368,8 @@ public class HostEmulationManager {
                         Log.w(TAG, "Can't route NDEF AID, sending AID_NOT_FOUND");
                     } else {
                         Log.w(TAG, "Can't handle AID " + selectAid + " sending AID_NOT_FOUND");
-                        NfcService.getInstance().mNfcDiagnostics.takeBugReport("NFC tap failed.");
+                        NfcService.getInstance().mNfcDiagnostics.takeBugReport("NFC tap failed.",
+                            "Couldn't route " + selectAid);
                     }
                     // Tell the remote we don't handle this AID
                     NfcService.getInstance().sendData(AID_NOT_FOUND);
