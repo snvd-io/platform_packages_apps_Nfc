@@ -233,6 +233,9 @@ public class HostEmulationManager {
             for (Bundle pollingFrame : pollingFrames) {
                 mPendingPollingLoopFrames.add(pollingFrame);
                 if (pollingFrame.getInt(PollingFrame.KEY_POLLING_LOOP_TYPE)
+                        == PollingFrame.POLLING_LOOP_TYPE_F) {
+                    service = getForegroundServiceOrDefault();
+                } else if (pollingFrame.getInt(PollingFrame.KEY_POLLING_LOOP_TYPE)
                         == PollingFrame.POLLING_LOOP_TYPE_UNKNOWN) {
                     byte[] data = pollingFrame.getByteArray(PollingFrame.KEY_POLLING_LOOP_DATA);
                     String dataStr = HexFormat.of().formatHex(data).toUpperCase(Locale.ROOT);
