@@ -99,6 +99,7 @@ public class HostEmulationManager {
     static final int CE_HCE_OTHER =
             NfcStatsLog.NFC_CARDEMULATION_OCCURRED__CATEGORY__HCE_OTHER;
     static final String NFC_PACKAGE = "com.android.nfc";
+    static final String DATA_KEY = "data";
 
     final Context mContext;
     final RegisteredAidCache mAidCache;
@@ -147,6 +148,12 @@ public class HostEmulationManager {
     Handler mHandler;
 
     public HostEmulationManager(Context context, Looper looper, RegisteredAidCache aidCache) {
+        this(context, looper, aidCache, new StatsdUtils(StatsdUtils.SE_NAME_HCE));
+    }
+
+    @VisibleForTesting
+    HostEmulationManager(Context context, Looper looper, RegisteredAidCache aidCache,
+                         StatsdUtils statsdUtils) {
         mContext = context;
         mLooper = looper;
         mHandler = new Handler(looper);
@@ -155,7 +162,7 @@ public class HostEmulationManager {
         mState = STATE_IDLE;
         mKeyguard = context.getSystemService(KeyguardManager.class);
         mPowerManager = context.getSystemService(PowerManager.class);
-        mStatsdUtils = Flags.statsdCeEventsFlag() ? new StatsdUtils(StatsdUtils.SE_NAME_HCE) : null;
+        mStatsdUtils = Flags.statsdCeEventsFlag() ? statsdUtils : null;
         mPollingLoopFilters = new HashMap<Integer, Map<String, List<ApduServiceInfo>>>();
         mPollingLoopPatternFilters = new HashMap<Integer, Map<Pattern, List<ApduServiceInfo>>>();
     }
@@ -643,7 +650,7 @@ public class HostEmulationManager {
         }
         Message msg = Message.obtain(null, HostApduService.MSG_COMMAND_APDU);
         Bundle dataBundle = new Bundle();
-        dataBundle.putByteArray("data", data);
+        dataBundle.putByteArray(DATA_KEY, data);
         msg.setData(dataBundle);
         msg.replyTo = mMessenger;
         try {
@@ -864,7 +871,7 @@ public class HostEmulationManager {
                 if (dataBundle == null) {
                     return;
                 }
-                byte[] data = dataBundle.getByteArray("data");
+                byte[] data = dataBundle.getByteArray(DATA_KEY);
                 if (data == null || data.length == 0) {
                     Log.e(TAG, "Dropping empty R-APDU");
                     return;
@@ -960,6 +967,11 @@ public class HostEmulationManager {
             return mActiveService.getBinder();
         }
         return null;
+    }
+
+    @VisibleForTesting
+    public Messenger getLocalMessenger() {
+        return mMessenger;
     }
 
     @VisibleForTesting
