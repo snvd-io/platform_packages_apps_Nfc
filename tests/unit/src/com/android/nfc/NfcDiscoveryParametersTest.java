@@ -53,7 +53,7 @@ public class NfcDiscoveryParametersTest {
             return;
         }
         mNfcSupported = true;
-        mNfcDiscoveryParameters = computeDiscoveryParameters();
+        mNfcDiscoveryParameters = computeDiscoveryParameters(false);
     }
 
     @After
@@ -62,12 +62,16 @@ public class NfcDiscoveryParametersTest {
     }
 
 
-    private NfcDiscoveryParameters computeDiscoveryParameters() {
+    private NfcDiscoveryParameters computeDiscoveryParameters(boolean isP2pEnable) {
         // Recompute discovery parameters based on screen state
         NfcDiscoveryParameters.Builder paramsBuilder = NfcDiscoveryParameters.newBuilder();
         paramsBuilder.setTechMask(1);
-        paramsBuilder.setEnableReaderMode(true);
         paramsBuilder.setEnableHostRouting(true);
+        if (isP2pEnable) {
+            paramsBuilder.setEnableP2p(true);
+        } else {
+            paramsBuilder.setEnableReaderMode(true);
+        }
         return paramsBuilder.build();
     }
 
@@ -77,6 +81,15 @@ public class NfcDiscoveryParametersTest {
 
         int techMask = mNfcDiscoveryParameters.getTechMask();
         Assert.assertEquals(1, techMask);
+    }
+
+    @Test
+    public void testShouldEnableP2p() {
+        if (!mNfcSupported) return;
+
+        mNfcDiscoveryParameters = computeDiscoveryParameters(true);
+        boolean shouldP2pEnable = mNfcDiscoveryParameters.shouldEnableP2p();
+        Assert.assertTrue(shouldP2pEnable);
     }
 
 }
