@@ -249,4 +249,11 @@ public class StatsdUtils {
         };
         logCardEmulationEvent(statsdCategory);
     }
+
+    public void logObserveModeStateChanged(boolean enabled, int triggerSource, int latency) {
+        NfcStatsLog.write(NfcStatsLog.NFC_OBSERVE_MODE_STATE_CHANGED,
+                enabled ? NfcStatsLog.NFC_OBSERVE_MODE_STATE_CHANGED__STATE__OBSERVE_MODE_ENABLED
+                        : NfcStatsLog.NFC_OBSERVE_MODE_STATE_CHANGED__STATE__OBSERVE_MODE_DISABLED,
+                triggerSource, latency);
+    }
 }

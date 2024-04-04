@@ -257,13 +257,13 @@ public class HostEmulationManager {
                     Map<Pattern, List<ApduServiceInfo>> patternMappingForUser =
                             mPollingLoopPatternFilters.get(ActivityManager.getCurrentUser());
                     Set<Pattern> patternSet = patternMappingForUser.keySet();
-                    List<Pattern> matchedPatternes = patternSet.stream()
+                    List<Pattern> matchedPatterns = patternSet.stream()
                             .filter(p -> p.matcher(dataStr).matches()).toList();
-                    if (!matchedPatternes.isEmpty()) {
+                    if (!matchedPatterns.isEmpty()) {
                         if (service == null) {
                             serviceInfos = new ArrayList<ApduServiceInfo>();
                         }
-                        for (Pattern matchedPattern : matchedPatternes) {
+                        for (Pattern matchedPattern : matchedPatterns) {
                             serviceInfos.addAll(patternMappingForUser.get(matchedPattern));
                         }
                     }
