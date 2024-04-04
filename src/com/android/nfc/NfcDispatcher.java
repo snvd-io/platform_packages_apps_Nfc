@@ -16,7 +16,7 @@
 
 package com.android.nfc;
 
-import static android.content.pm.PackageManager.MATCH_CLONE_PROFILE_LONG;
+import static android.content.pm.PackageManager.MATCH_CLONE_PROFILE;
 import static android.content.pm.PackageManager.MATCH_DEFAULT_ONLY;
 import static android.nfc.Flags.enableNfcMainline;
 
@@ -206,7 +206,7 @@ class NfcDispatcher {
     private static List<ResolveInfo> queryNfcIntentActivitiesAsUser(
             PackageManager packageManager, Intent intent, UserHandle uh) {
         return packageManager.queryIntentActivitiesAsUser(intent,
-                ResolveInfoFlags.of(MATCH_DEFAULT_ONLY | MATCH_CLONE_PROFILE_LONG),
+                ResolveInfoFlags.of(MATCH_DEFAULT_ONLY | MATCH_CLONE_PROFILE),
                 uh);
     }
 
