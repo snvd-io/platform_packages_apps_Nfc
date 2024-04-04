@@ -394,6 +394,9 @@ public class HostEmulationManager {
                 if (resolveInfo == null || resolveInfo.services.size() == 0) {
                     if (selectAid.equals(NDEF_V1_AID) || selectAid.equals(NDEF_V2_AID)) {
                         Log.w(TAG, "Can't route NDEF AID, sending AID_NOT_FOUND");
+                    } else if (!mPowerManager.isScreenOn()) {
+                      Log.i(TAG,
+                          "Screen is off, sending AID_NOT_FOUND, but not triggering bug report");
                     } else {
                         Log.w(TAG, "Can't handle AID " + selectAid + " sending AID_NOT_FOUND");
                         if (mUnroutableAidBugReportRunnable != null) {
