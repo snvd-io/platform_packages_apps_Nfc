@@ -52,7 +52,6 @@ import com.android.nfc.NfcInjector;
 import com.android.nfc.NfcService;
 import com.android.nfc.NfcStatsLog;
 import com.android.nfc.cardemulation.RegisteredAidCache.AidResolveInfo;
-import com.android.nfc.cardemulation.RegisteredServicesCache.DynamicSettings;
 import com.android.nfc.cardemulation.util.StatsdUtils;
 import com.android.nfc.flags.Flags;
 import com.android.nfc.proto.NfcEventProto;
@@ -289,6 +288,13 @@ public class HostEmulationManager {
                     } else {
                         service = getForegroundServiceOrDefault();
                     }
+
+                    if (mStatsdUtils != null) {
+                        mStatsdUtils.tallyPollingFrame(dataStr, pollingFrame);
+                    }
+                }
+                if (mStatsdUtils != null) {
+                    mStatsdUtils.logPollingFrames();
                 }
             }
 
