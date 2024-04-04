@@ -484,11 +484,19 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
     @Override
     public void onRemoteFieldActivated() {
         sendMessage(NfcService.MSG_RF_FIELD_ACTIVATED, null);
+
+        if (mStatsdUtils != null) {
+            mStatsdUtils.logFieldChanged(true, 0);
+        }
     }
 
     @Override
     public void onRemoteFieldDeactivated() {
         sendMessage(NfcService.MSG_RF_FIELD_DEACTIVATED, null);
+
+        if (mStatsdUtils != null) {
+            mStatsdUtils.logFieldChanged(false, 0);
+        }
     }
 
     @Override
