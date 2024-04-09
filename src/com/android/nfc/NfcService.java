@@ -3622,6 +3622,9 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
                     break;
 
                 case MSG_RF_FIELD_ACTIVATED:
+                    if (mCardEmulationManager != null) {
+                        mCardEmulationManager.onFieldChangeDetected(true);
+                    }
                     Intent fieldOnIntent = new Intent(ACTION_RF_FIELD_ON_DETECTED);
                     sendNfcPermissionProtectedBroadcast(fieldOnIntent);
                     if (mIsSecureNfcEnabled) {
@@ -3629,6 +3632,9 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
                     }
                     break;
                 case MSG_RF_FIELD_DEACTIVATED:
+                    if (mCardEmulationManager != null) {
+                        mCardEmulationManager.onFieldChangeDetected(false);
+                    }
                     Intent fieldOffIntent = new Intent(ACTION_RF_FIELD_OFF_DETECTED);
                     sendNfcPermissionProtectedBroadcast(fieldOffIntent);
                     break;
