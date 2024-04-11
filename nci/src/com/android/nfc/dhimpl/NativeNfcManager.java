@@ -49,10 +49,6 @@ public class NativeNfcManager implements DeviceHost {
 
     static final String DRIVER_NAME = "android-nci";
 
-    static {
-        System.loadLibrary("nfc_nci_jni");
-    }
-
     /* Native structure */
     private long mNative;
 
@@ -74,8 +70,13 @@ public class NativeNfcManager implements DeviceHost {
     private static final int NCI_OID_INDEX = 1;
     private static final int OP_CODE_INDEX = 3;
 
+    private void loadLibrary() {
+        System.loadLibrary("nfc_nci_jni");
+    }
+
     public NativeNfcManager(Context context, DeviceHostListener listener) {
         mListener = listener;
+        loadLibrary();
         initializeNativeStructure();
         mContext = context;
     }
