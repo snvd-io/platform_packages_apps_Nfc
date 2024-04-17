@@ -1534,7 +1534,9 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
     final class NfcAdapterService extends INfcAdapter.Stub {
         private boolean isPrivileged(int callingUid) {
             // Check for root uid to help invoking privileged APIs from rooted shell only.
-            return callingUid == Process.SYSTEM_UID || callingUid == Process.ROOT_UID;
+            return callingUid == Process.SYSTEM_UID
+                    || callingUid == Process.NFC_UID
+                    || callingUid == Process.ROOT_UID;
         }
 
         @Override
@@ -1604,13 +1606,13 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
         }
 
         @Override
-        public boolean isObserveModeEnabled() {
+        public synchronized boolean isObserveModeEnabled() {
             NfcPermissions.enforceUserPermissions(mContext);
             return mDeviceHost.isObserveModeEnabled();
         }
 
         @Override
-        public boolean setObserveMode(boolean enable) {
+        public synchronized boolean setObserveMode(boolean enable) {
             int callingUid = Binder.getCallingUid();
             int triggerSource =
                     NFC_OBSERVE_MODE_STATE_CHANGED__TRIGGER_SOURCE__TRIGGER_SOURCE_UNKNOWN;
