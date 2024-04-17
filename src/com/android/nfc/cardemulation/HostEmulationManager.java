@@ -380,7 +380,9 @@ public class HostEmulationManager {
         @Override
         public void run() {
             NfcService.getInstance().mNfcDiagnostics.takeBugReport(
-                    "NFC tap failed.",
+                    "NFC tap failed."
+                        + " (If you weren't using NFC, "
+                        + "no need to submit this report.)",
                     "Couldn't route " + String.join(", ", mUnroutedAids));
         }
     }
