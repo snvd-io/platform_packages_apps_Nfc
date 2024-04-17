@@ -249,4 +249,17 @@ public class StatsdUtils {
         };
         logCardEmulationEvent(statsdCategory);
     }
+
+    public void logFieldChanged(boolean isOn, int fieldStrength) {
+        NfcStatsLog.write(NfcStatsLog.NFC_FIELD_CHANGED,
+                isOn ? NfcStatsLog.NFC_FIELD_CHANGED__FIELD_STATUS__FIELD_ON
+                : NfcStatsLog.NFC_FIELD_CHANGED__FIELD_STATUS__FIELD_OFF, fieldStrength);
+    }
+
+    public void logObserveModeStateChanged(boolean enabled, int triggerSource, int latency) {
+        NfcStatsLog.write(NfcStatsLog.NFC_OBSERVE_MODE_STATE_CHANGED,
+                enabled ? NfcStatsLog.NFC_OBSERVE_MODE_STATE_CHANGED__STATE__OBSERVE_MODE_ENABLED
+                        : NfcStatsLog.NFC_OBSERVE_MODE_STATE_CHANGED__STATE__OBSERVE_MODE_DISABLED,
+                triggerSource, latency);
+    }
 }
