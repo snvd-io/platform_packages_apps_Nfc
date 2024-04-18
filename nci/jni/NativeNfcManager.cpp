@@ -98,8 +98,6 @@ jmethodID gCachedNfcManagerNotifyHwErrorReported;
 jmethodID gCachedNfcManagerNotifyPollingLoopFrame;
 jmethodID gCachedNfcManagerNotifyVendorSpecificEvent;
 jmethodID gCachedNfcManagerNotifyCommandTimeout;
-const char* gNativeP2pDeviceClassName =
-    "com/android/nfc/dhimpl/NativeP2pDevice";
 const char* gNativeNfcTagClassName = "com/android/nfc/dhimpl/NativeNfcTag";
 const char* gNativeNfcManagerClassName =
     "com/android/nfc/dhimpl/NativeNfcManager";
@@ -679,12 +677,6 @@ static jboolean nfcManager_initNativeStruc(JNIEnv* e, jobject o) {
   if (nfc_jni_cache_object(e, gNativeNfcTagClassName, &(nat->cached_NfcTag)) ==
       -1) {
     LOG(ERROR) << StringPrintf("%s: fail cache NativeNfcTag", __func__);
-    return JNI_FALSE;
-  }
-
-  if (nfc_jni_cache_object(e, gNativeP2pDeviceClassName,
-                           &(nat->cached_P2pDevice)) == -1) {
-    LOG(ERROR) << StringPrintf("%s: fail cache NativeP2pDevice", __func__);
     return JNI_FALSE;
   }
 
