@@ -1648,59 +1648,31 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
         @Override
         public boolean setObserveMode(boolean enable) {
             int callingUid = Binder.getCallingUid();
-            UserHandle user = Binder.getCallingUserHandle();
-            long token = Binder.clearCallingIdentity();
-            boolean isWalletRoleEnabled = false;
-            String defaultWalletPackage = null;
             int triggerSource =
                     NFC_OBSERVE_MODE_STATE_CHANGED__TRIGGER_SOURCE__TRIGGER_SOURCE_UNKNOWN;
-
-            try {
-                if (!android.nfc.Flags.nfcObserveMode()) {
-                    return false;
+            if (!isPrivileged(callingUid)) {
+                NfcPermissions.enforceUserPermissions(mContext);
+                String packageName = getPackageNameFromUid(callingUid);
+                if (packageName == null) {
+                    Log.e(TAG, "no package name associated with non-privileged calling UID");
                 }
-                isWalletRoleEnabled = android.permission.flags.Flags.walletRoleEnabled();
-                if (isWalletRoleEnabled) {
-                    defaultWalletPackage = getWalletRoleHolder(user);
-                }
-            } finally {
-                Binder.restoreCallingIdentity(token);
-            }
-            boolean privilegedCaller = false;
-            // Allow non-foreground callers with system uid or default payment service.
-            String packageName = getPackageNameFromUid(callingUid);
-            if (packageName != null) {
-                if (isWalletRoleEnabled) {
-                    privilegedCaller = (isPrivileged(callingUid)
-                            || packageName.equals(defaultWalletPackage));
-
-                    if (privilegedCaller) {
-                        triggerSource =
-                                NFC_OBSERVE_MODE_STATE_CHANGED__TRIGGER_SOURCE__WALLET_ROLE_HOLDER;
+                if (mCardEmulationManager.isPreferredServicePackageNameForUser(packageName,
+                        UserHandle.getUserHandleForUid(callingUid).getIdentifier())) {
+                    if (android.permission.flags.Flags.walletRoleEnabled()) {
+                        UserHandle user = Binder.getCallingUserHandle();
+                        triggerSource = packageName.equals(getWalletRoleHolder(user))
+                            ? NFC_OBSERVE_MODE_STATE_CHANGED__TRIGGER_SOURCE__WALLET_ROLE_HOLDER
+                            : NFC_OBSERVE_MODE_STATE_CHANGED__TRIGGER_SOURCE__FOREGROUND_APP;
+                    } else {
+                        if (mForegroundUtils.isInForeground(callingUid)) {
+                            triggerSource =
+                                NFC_OBSERVE_MODE_STATE_CHANGED__TRIGGER_SOURCE__FOREGROUND_APP;
+                        }
                     }
                 } else {
-                    String defaultPaymentService = Settings.Secure.getString(
-                            mContext.createContextAsUser(user, 0).getContentResolver(),
-                            Constants.SETTINGS_SECURE_NFC_PAYMENT_DEFAULT_COMPONENT);
-                    if (defaultPaymentService != null) {
-                        String defaultPaymentPackage =
-                                ComponentName.unflattenFromString(defaultPaymentService)
-                                        .getPackageName();
-                        privilegedCaller = (callingUid == Process.SYSTEM_UID
-                                || packageName.equals(defaultPaymentPackage));
-                    }
-                }
-            } else {
-                privilegedCaller = isPrivileged(callingUid);
-            }
-            if (!privilegedCaller) {
-                NfcPermissions.enforceUserPermissions(mContext);
-                if (!mForegroundUtils.isInForeground(Binder.getCallingUid())) {
-                    Log.e(TAG, "setObserveMode: Caller not in foreground.");
+                    Log.e(TAG, "setObserveMode: Caller not preferred NFC service.");
                     return false;
                 }
-                triggerSource =
-                        NFC_OBSERVE_MODE_STATE_CHANGED__TRIGGER_SOURCE__FOREGROUND_APP;
             }
 
             if (mStatsdUtils != null) {
