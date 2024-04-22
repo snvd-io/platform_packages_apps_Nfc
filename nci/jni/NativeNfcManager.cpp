@@ -119,7 +119,6 @@ bool isDiscoveryStarted();
 **
 *****************************************************************************/
 namespace android {
-static jint sLastError = ERROR_BUFFER_TOO_SMALL;
 static SyncEvent sNfaEnableEvent;                // event for NFA_Enable()
 static SyncEvent sNfaDisableEvent;               // event for NFA_Disable()
 static SyncEvent sNfaEnableDisablePollingEvent;  // event for
@@ -1601,22 +1600,6 @@ TheEnd:
 
 /*******************************************************************************
 **
-** Function:        nfcManager_doGetLastError
-**
-** Description:     Get the last error code.
-**                  e: JVM environment.
-**                  o: Java object.
-**
-** Returns:         Last error code.
-**
-*******************************************************************************/
-static jint nfcManager_doGetLastError(JNIEnv*, jobject) {
-  LOG(DEBUG) << StringPrintf("%s: last error=%i", __func__, sLastError);
-  return sLastError;
-}
-
-/*******************************************************************************
-**
 ** Function:        nfcManager_doDeinitialize
 **
 ** Description:     Turn off NFC.
@@ -2354,8 +2337,6 @@ static JNINativeMethod gMethods[] = {
     {"doEnableDiscovery", "(IZZZZZ)V", (void*)nfcManager_enableDiscovery},
 
     {"doStartStopPolling", "(Z)V", (void*)nfcManager_doStartStopPolling},
-
-    {"doGetLastError", "()I", (void*)nfcManager_doGetLastError},
 
     {"disableDiscovery", "()V", (void*)nfcManager_disableDiscovery},
 
