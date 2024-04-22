@@ -4221,7 +4221,13 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
     }
 
     private void setPaymentForegroundPreference(int user) {
-        Context uc = mContext.createContextAsUser(UserHandle.of(user), 0);
+        Context uc;
+        try {
+            uc = mContext.createContextAsUser(UserHandle.of(user), 0);
+        } catch (IllegalStateException e) {
+            Log.d(TAG, "Fail to get user context for user: " + user);
+            return;
+        }
         try {
             // Check whether the Settings.Secure.NFC_PAYMENT_FOREGROUND exists or not.
             Settings.Secure.getInt(uc.getContentResolver(),
