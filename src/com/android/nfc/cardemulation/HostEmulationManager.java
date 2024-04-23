@@ -732,7 +732,11 @@ public class HostEmulationManager {
     void unbindPaymentServiceLocked() {
         Log.d(TAG, "Unbinding payment service");
         if (mPaymentServiceBound) {
-            mContext.unbindService(mPaymentConnection);
+            try {
+                mContext.unbindService(mPaymentConnection);
+            } catch (Exception e) {
+                Log.w(TAG, "Failed to unbind payment service: " + mPaymentServiceName, e);
+            }
             mPaymentServiceBound = false;
         }
 
@@ -765,7 +769,11 @@ public class HostEmulationManager {
     void unbindServiceIfNeededLocked() {
         if (mServiceBound) {
             Log.d(TAG, "Unbinding from service " + mServiceName);
-            mContext.unbindService(mConnection);
+            try {
+                mContext.unbindService(mConnection);
+            } catch (Exception e) {
+                Log.w(TAG, "Failed to unbind service " + mServiceName, e);
+            }
             mServiceBound = false;
         }
 
