@@ -3883,10 +3883,6 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
         }
     }
 
-    public String getNfaStorageDir() {
-        return mDeviceHost.getNfaStorageDir();
-    }
-
     private void copyNativeCrashLogsIfAny(PrintWriter pw) {
       try {
           File file = new File(NATIVE_LOG_FILE_PATH, NATIVE_LOG_FILE_NAME);
