@@ -664,6 +664,10 @@ void NfcTag::fillNativeNfcTagMembers3(JNIEnv* e, jclass tag_cls, jobject tag,
     sTechPollBytes =
         reinterpret_cast<jobjectArray>(e->NewGlobalRef(techPollBytes.get()));
   } else {
+    if (sTechPollBytes == NULL) {
+      sTechPollBytes =
+          reinterpret_cast<jobjectArray>(e->NewGlobalRef(techPollBytes.get()));
+    }
     /* Add previously activated tag's tech poll bytes also in the
     list for multiprotocol tag*/
     jobject techPollBytesObject;
@@ -830,6 +834,11 @@ void NfcTag::fillNativeNfcTagMembers4(JNIEnv* e, jclass tag_cls, jobject tag,
     // multi selection.
     gtechActBytes =
         reinterpret_cast<jobjectArray>(e->NewGlobalRef(techActBytes.get()));
+  } else {
+    for (int j = 0; j < mTechListTail; j++) {
+      gtechActBytesObject = e->GetObjectArrayElement(gtechActBytes, j);
+      e->SetObjectArrayElement(techActBytes.get(), j, gtechActBytesObject);
+    }
   }
 
   for (int i = mTechListTail; i < mNumTechList; i++) {
