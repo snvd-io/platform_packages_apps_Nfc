@@ -355,9 +355,6 @@ public class NativeNfcManager implements DeviceHost {
         return doSetNfcSecure(enable);
     }
 
-    @Override
-    public native String getNfaStorageDir();
-
     private native void doStartStopPolling(boolean start);
 
     @Override
