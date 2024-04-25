@@ -520,9 +520,7 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
         new ApplyRoutingTask().execute();
     }
 
-
-    @Override
-    public void onHwErrorReported() {
+    private void restartStack() {
         try {
             mContext.unregisterReceiver(mReceiver);
         } catch (IllegalArgumentException e) {
@@ -531,6 +529,11 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
         mIsRecovering = true;
         new EnableDisableTask().execute(TASK_DISABLE);
         new EnableDisableTask().execute(TASK_ENABLE);
+    }
+
+    @Override
+    public void onHwErrorReported() {
+        restartStack();
     }
 
     @Override
@@ -638,6 +641,7 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
         filter.addAction(Intent.ACTION_USER_SWITCHED);
         filter.addAction(Intent.ACTION_USER_ADDED);
         if (mContext.getResources().getBoolean(R.bool.restart_on_sim_change)) {
+            filter.addAction(TelephonyManager.ACTION_SIM_CARD_STATE_CHANGED);
             filter.addAction(TelephonyManager.ACTION_SIM_APPLICATION_STATE_CHANGED);
         }
         mContext.registerReceiverForAllUsers(mReceiver, filter, null, null);
@@ -1307,7 +1311,7 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
                 mReaderModeParams = null;
                 mDiscoveryTechParams = null;
             }
-            mNfcDispatcher.setForegroundDispatch(null, null, new String[0][]);
+            mNfcDispatcher.resetForegroundDispatch();
 
             boolean result;
             if (!mIsAlwaysOnSupported || mIsRecovering
@@ -1738,7 +1742,7 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
             }
             // Short-cut the disable path
             if (intent == null && filters == null && techListsParcel == null) {
-                mNfcDispatcher.setForegroundDispatch(null, null, null);
+                mNfcDispatcher.resetForegroundDispatch();
                 return;
             }
 
@@ -4137,14 +4141,19 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
                             UserHandle.of(ActivityManager.getCurrentUser()), /*flags=*/0))
                             .startNotification();
                 }
-            } else if (action.equals(TelephonyManager.ACTION_SIM_APPLICATION_STATE_CHANGED)) {
+            } else if (action.equals(TelephonyManager.ACTION_SIM_CARD_STATE_CHANGED) ||
+                    action.equals(TelephonyManager.ACTION_SIM_APPLICATION_STATE_CHANGED)) {
                 if (!mContext.getResources().getBoolean(R.bool.restart_on_sim_change)) return;
                 int state = intent.getIntExtra(TelephonyManager.EXTRA_SIM_STATE,
                         TelephonyManager.SIM_STATE_UNKNOWN);
-                if (state == TelephonyManager.SIM_STATE_UNKNOWN
+                // Use |SIM_STATE_ABSENT| for detecting sim removal
+                // Use |SIM_STATE_LOADED| for detecting sim insertion and ready.
+                if (state == TelephonyManager.SIM_STATE_ABSENT
                         || state == TelephonyManager.SIM_STATE_LOADED) {
-                    Log.w(TAG, "Restarting NFC stack on SIM state change, SIM_STATE: "  + state);
-                    mNfcInjector.killNfcStack();
+                    if (isNfcEnabled()) {
+                        Log.w(TAG, "Restarting NFC stack on SIM state change, SIM_STATE: " + state);
+                        restartStack();
+                    }
                 }
             }
         }
