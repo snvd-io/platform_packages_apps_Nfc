@@ -24,10 +24,12 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.clearInvocations;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 import android.app.ActivityManager;
@@ -133,10 +135,11 @@ public final class NfcServiceTest {
     private void createNfcService() {
         mNfcService = new NfcService(mApplication, mNfcInjector);
         mLooper.dispatchAll();
-        verify(mNfcInjector, atLeastOnce()).makeDeviceHost(mDeviceHostListener.capture());
-        verify(mApplication, atLeastOnce()).registerReceiverForAllUsers(
+        verify(mNfcInjector).makeDeviceHost(mDeviceHostListener.capture());
+        verify(mApplication).registerReceiverForAllUsers(
                 mGlobalReceiver.capture(),
                 argThat(intent -> intent.hasAction(Intent.ACTION_SCREEN_ON)), any(), any());
+        clearInvocations(mDeviceHost, mNfcInjector, mApplication);
     }
 
     private void enableAndVerify() throws Exception {
@@ -146,6 +149,7 @@ public final class NfcServiceTest {
         verify(mPreferencesEditor).putBoolean(PREF_NFC_ON, true);
         mLooper.dispatchAll();
         verify(mDeviceHost).initialize();
+        clearInvocations(mDeviceHost, mPreferencesEditor);
     }
 
     private void disableAndVerify() throws Exception {
@@ -155,6 +159,8 @@ public final class NfcServiceTest {
         verify(mPreferencesEditor).putBoolean(PREF_NFC_ON, false);
         mLooper.dispatchAll();
         verify(mDeviceHost).deinitialize();
+        verify(mNfcDispatcher).resetForegroundDispatch();
+        clearInvocations(mDeviceHost, mPreferencesEditor, mNfcDispatcher);
     }
 
     @Test
@@ -163,18 +169,42 @@ public final class NfcServiceTest {
     }
 
     @Test
+    public void testDisable() throws Exception {
+        enableAndVerify();
+        disableAndVerify();
+    }
+
+    @Test
     public void testSimStateChange() throws Exception {
+        when(mResources.getBoolean(R.bool.restart_on_sim_change)).thenReturn(true);
+        createNfcService();
+
+        enableAndVerify();
+        Intent intent = new Intent(TelephonyManager.ACTION_SIM_APPLICATION_STATE_CHANGED)
+                .putExtra(TelephonyManager.EXTRA_SIM_STATE, TelephonyManager.SIM_STATE_LOADED);
+        mGlobalReceiver.getValue().onReceive(mApplication, intent);
+        mLooper.dispatchAll();
+        verify(mDeviceHost).deinitialize();
+        verify(mDeviceHost).initialize();
+
+        enableAndVerify();
+        intent = new Intent(TelephonyManager.ACTION_SIM_CARD_STATE_CHANGED)
+                .putExtra(TelephonyManager.EXTRA_SIM_STATE, TelephonyManager.SIM_STATE_ABSENT);
+        mGlobalReceiver.getValue().onReceive(mApplication, intent);
+        mLooper.dispatchAll();
+        verify(mDeviceHost).deinitialize();
+        verify(mDeviceHost).initialize();
+    }
+
+    @Test
+    public void testSimStateChangeWhenNfcIsDisabled() throws Exception {
         when(mResources.getBoolean(R.bool.restart_on_sim_change)).thenReturn(true);
         createNfcService();
 
         Intent intent = new Intent(TelephonyManager.ACTION_SIM_APPLICATION_STATE_CHANGED)
                 .putExtra(TelephonyManager.EXTRA_SIM_STATE, TelephonyManager.SIM_STATE_LOADED);
         mGlobalReceiver.getValue().onReceive(mApplication, intent);
-        verify(mNfcInjector).killNfcStack();
-
-        intent = new Intent(TelephonyManager.ACTION_SIM_APPLICATION_STATE_CHANGED)
-                .putExtra(TelephonyManager.EXTRA_SIM_STATE, TelephonyManager.SIM_STATE_UNKNOWN);
-        mGlobalReceiver.getValue().onReceive(mApplication, intent);
-        verify(mNfcInjector, times(2)).killNfcStack();
+        mLooper.dispatchAll();
+        verifyNoMoreInteractions(mDeviceHost);
     }
 }
