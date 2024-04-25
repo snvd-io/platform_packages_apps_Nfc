@@ -20,6 +20,7 @@ import static com.android.nfc.NfcService.PREF_NFC_ON;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
@@ -33,6 +34,7 @@ import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 import android.app.ActivityManager;
+import android.app.AlarmManager;
 import android.app.Application;
 import android.app.KeyguardManager;
 import android.app.backup.BackupManager;
@@ -43,6 +45,7 @@ import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.content.res.Resources;
 import android.nfc.NfcServiceManager;
+import android.nfc.tech.Ndef;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Handler;
@@ -55,6 +58,8 @@ import android.telephony.TelephonyManager;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 
 
+import com.android.dx.mockito.inline.extended.ExtendedMockito;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -64,6 +69,9 @@ import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.mockito.MockitoSession;
+import org.mockito.quality.Strictness;
+
+import java.util.Optional;
 
 @RunWith(AndroidJUnit4.class)
 public final class NfcServiceTest {
@@ -89,8 +97,11 @@ public final class NfcServiceTest {
     @Mock ContentResolver mContentResolver;
     @Mock Bundle mUserRestrictions;
     @Mock BackupManager mBackupManager;
+    @Mock TelephonyManager mTelephonyManager;
+    @Mock AlarmManager mAlarmManager;
     @Captor ArgumentCaptor<DeviceHost.DeviceHostListener> mDeviceHostListener;
     @Captor ArgumentCaptor<BroadcastReceiver> mGlobalReceiver;
+    @Captor ArgumentCaptor<AlarmManager.OnAlarmListener> mAlarmListener;
     TestLooper mLooper;
     NfcService mNfcService;
     private MockitoSession mStaticMockSession;
@@ -116,6 +127,8 @@ public final class NfcServiceTest {
         when(mApplication.getSystemService(UserManager.class)).thenReturn(mUserManager);
         when(mApplication.getSystemService(ActivityManager.class)).thenReturn(mActivityManager);
         when(mApplication.getSystemService(KeyguardManager.class)).thenReturn(mKeyguardManager);
+        when(mApplication.getSystemService(AlarmManager.class)).thenReturn(mAlarmManager);
+        when(mApplication.getSystemService(TelephonyManager.class)).thenReturn(mTelephonyManager);
         when(mApplication.getPackageManager()).thenReturn(mPackageManager);
         when(mApplication.getResources()).thenReturn(mResources);
         when(mApplication.createContextAsUser(any(), anyInt())).thenReturn(mApplication);
@@ -163,6 +176,7 @@ public final class NfcServiceTest {
         clearInvocations(mDeviceHost, mPreferencesEditor, mNfcDispatcher);
     }
 
+
     @Test
     public void testEnable() throws Exception {
         enableAndVerify();
@@ -174,9 +188,12 @@ public final class NfcServiceTest {
         disableAndVerify();
     }
 
+
     @Test
     public void testSimStateChange() throws Exception {
         when(mResources.getBoolean(R.bool.restart_on_sim_change)).thenReturn(true);
+        when(mTelephonyManager.getSimApplicationState())
+            .thenReturn(TelephonyManager.SIM_STATE_LOADED);
         createNfcService();
 
         enableAndVerify();
@@ -199,12 +216,66 @@ public final class NfcServiceTest {
     @Test
     public void testSimStateChangeWhenNfcIsDisabled() throws Exception {
         when(mResources.getBoolean(R.bool.restart_on_sim_change)).thenReturn(true);
+        when(mTelephonyManager.getSimApplicationState())
+            .thenReturn(TelephonyManager.SIM_STATE_LOADED);
+        createNfcService();
+
+        Intent intent = new Intent(TelephonyManager.ACTION_SIM_APPLICATION_STATE_CHANGED)
+                .putExtra(TelephonyManager.EXTRA_SIM_STATE, TelephonyManager.SIM_STATE_ABSENT);
+        mGlobalReceiver.getValue().onReceive(mApplication, intent);
+        mLooper.dispatchAll();
+        verifyNoMoreInteractions(mDeviceHost);
+    }
+
+    @Test
+    public void testBootupWithNfcOn() throws Exception {
+        when(mPreferences.getBoolean(eq(PREF_NFC_ON), anyBoolean())).thenReturn(true);
+        mNfcService = new NfcService(mApplication, mNfcInjector);
+        mLooper.dispatchAll();
+        verify(mNfcInjector).makeDeviceHost(mDeviceHostListener.capture());
+        verify(mApplication).registerReceiverForAllUsers(
+                mGlobalReceiver.capture(),
+                argThat(intent -> intent.hasAction(Intent.ACTION_SCREEN_ON)), any(), any());
+        verify(mDeviceHost).initialize();
+    }
+
+    @Test
+    public void testBootupWithNfcOn_WhenSimStateAbsent() throws Exception {
+        when(mResources.getBoolean(R.bool.restart_on_sim_change)).thenReturn(true);
+        when(mTelephonyManager.getSimApplicationState())
+            .thenReturn(TelephonyManager.SIM_STATE_ABSENT);
+        createNfcService();
+
+        verifyNoMoreInteractions(mDeviceHost);
+    }
+
+    @Test
+    public void testBootupWithNfcOn_WhenSimStateAbsent_ThenLoaded() throws Exception {
+        when(mPreferences.getBoolean(eq(PREF_NFC_ON), anyBoolean())).thenReturn(true);
+        when(mResources.getBoolean(R.bool.restart_on_sim_change)).thenReturn(true);
+        when(mTelephonyManager.getSimApplicationState())
+            .thenReturn(TelephonyManager.SIM_STATE_ABSENT);
         createNfcService();
 
         Intent intent = new Intent(TelephonyManager.ACTION_SIM_APPLICATION_STATE_CHANGED)
                 .putExtra(TelephonyManager.EXTRA_SIM_STATE, TelephonyManager.SIM_STATE_LOADED);
         mGlobalReceiver.getValue().onReceive(mApplication, intent);
         mLooper.dispatchAll();
-        verifyNoMoreInteractions(mDeviceHost);
+        verify(mDeviceHost).initialize();
+    }
+
+    @Test
+    public void testBootupWithNfcOn_WhenSimStateAbsent_ThenTimeout() throws Exception {
+        when(mPreferences.getBoolean(eq(PREF_NFC_ON), anyBoolean())).thenReturn(true);
+        when(mResources.getBoolean(R.bool.restart_on_sim_change)).thenReturn(true);
+        when(mTelephonyManager.getSimApplicationState())
+            .thenReturn(TelephonyManager.SIM_STATE_ABSENT);
+        createNfcService();
+        verify(mAlarmManager).setExact(
+                anyInt(), anyLong(), anyString(), mAlarmListener.capture(), any());
+
+        mAlarmListener.getValue().onAlarm();
+        mLooper.dispatchAll();
+        verify(mDeviceHost).initialize();
     }
 }
