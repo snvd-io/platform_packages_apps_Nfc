@@ -318,22 +318,6 @@ public class NativeNfcManager implements DeviceHost {
         doDump(fd);
     }
 
-    private native void doEnableScreenOffSuspend();
-
-    @Override
-    public boolean enableScreenOffSuspend() {
-        doEnableScreenOffSuspend();
-        return true;
-    }
-
-    private native void doDisableScreenOffSuspend();
-
-    @Override
-    public boolean disableScreenOffSuspend() {
-        doDisableScreenOffSuspend();
-        return true;
-    }
-
     private native boolean doSetNfcSecure(boolean enable);
 
     @Override
