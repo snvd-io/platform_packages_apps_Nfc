@@ -233,7 +233,6 @@ public class NativeNfcManager implements DeviceHost {
             boolean enableLowPowerPolling,
             boolean enableReaderMode,
             boolean enableHostRouting,
-            boolean enableP2p,
             boolean restart);
 
     @Override
@@ -243,7 +242,6 @@ public class NativeNfcManager implements DeviceHost {
                 params.shouldEnableLowPowerDiscovery(),
                 params.shouldEnableReaderMode(),
                 params.shouldEnableHostRouting(),
-                params.shouldEnableP2p(),
                 restart);
     }
 
