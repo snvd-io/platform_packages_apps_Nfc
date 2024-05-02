@@ -40,6 +40,8 @@ import android.util.SparseArray;
 import android.util.Xml;
 import android.util.proto.ProtoOutputStream;
 
+import androidx.annotation.VisibleForTesting;
+
 import com.android.internal.annotations.GuardedBy;
 import com.android.nfc.Utils;
 
@@ -107,7 +109,8 @@ public class RegisteredNfcFServicesCache {
         }
     };
 
-    private static class UserServices {
+    @VisibleForTesting
+    static class UserServices {
         /**
          * All services that have registered
          */
@@ -137,6 +140,11 @@ public class RegisteredNfcFServicesCache {
     }
 
     public RegisteredNfcFServicesCache(Context context, Callback callback) {
+        this(context, callback, null);
+    }
+
+    @VisibleForTesting
+    RegisteredNfcFServicesCache(Context context, Callback callback, AtomicFile atomicFile) {
         mContext = context;
         mCallback = callback;
 
@@ -190,8 +198,12 @@ public class RegisteredNfcFServicesCache {
         mContext.registerReceiverForAllUsers(mReceiver.get(), sdFilter, null, null);
 
         File dataDir = mContext.getFilesDir();
-        mDynamicSystemCodeNfcid2File =
+        if (atomicFile == null) {
+            mDynamicSystemCodeNfcid2File =
                 new AtomicFile(new File(dataDir, "dynamic_systemcode_nfcid2.xml"));
+        } else {
+            mDynamicSystemCodeNfcid2File = atomicFile;
+        }
     }
 
     void initialize() {
@@ -421,7 +433,8 @@ public class RegisteredNfcFServicesCache {
         }
     }
 
-    private void readDynamicSystemCodeNfcid2Locked() {
+    @VisibleForTesting
+    void readDynamicSystemCodeNfcid2Locked() {
         if (DBG) Log.d(TAG, "readDynamicSystemCodeNfcid2Locked");
         FileInputStream fis = null;
         try {
@@ -509,7 +522,8 @@ public class RegisteredNfcFServicesCache {
         }
     }
 
-    private boolean writeDynamicSystemCodeNfcid2Locked() {
+    @VisibleForTesting
+    boolean writeDynamicSystemCodeNfcid2Locked() {
         if (DBG) Log.d(TAG, "writeDynamicSystemCodeNfcid2Locked");
         FileOutputStream fos = null;
         try {
