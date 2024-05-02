@@ -41,6 +41,7 @@ import android.util.Xml;
 import android.util.proto.ProtoOutputStream;
 
 import com.android.internal.annotations.GuardedBy;
+import com.android.nfc.Utils;
 
 import org.xmlpull.v1.XmlPullParser;
 import org.xmlpull.v1.XmlPullParserException;
@@ -146,23 +147,27 @@ public class RegisteredNfcFServicesCache {
             public void onReceive(Context context, Intent intent) {
                 final int uid = intent.getIntExtra(Intent.EXTRA_UID, -1);
                 String action = intent.getAction();
-                if (DBG) Log.d(TAG, "Intent action: " + action);
-                if (uid != -1) {
-                    boolean replaced = intent.getBooleanExtra(Intent.EXTRA_REPLACING, false) &&
-                            (Intent.ACTION_PACKAGE_ADDED.equals(action) ||
-                             Intent.ACTION_PACKAGE_REMOVED.equals(action));
-                    if (!replaced) {
-                        int currentUser = ActivityManager.getCurrentUser();
-                        if (currentUser == getProfileParentId(UserHandle.
-                                getUserHandleForUid(uid).getIdentifier())) {
-                            invalidateCache(UserHandle.getUserHandleForUid(uid).getIdentifier());
-                        } else {
-                            // Cache will automatically be updated on user switch
-                        }
-                    } else {
-                        if (DBG) Log.d(TAG,
-                                "Ignoring package intent due to package being replaced.");
-                    }
+                if (VDBG) Log.d(TAG, "Intent action: " + action);
+                if (uid == -1) return;
+                int userId = UserHandle.getUserHandleForUid(uid).getIdentifier();
+                int currentUser = ActivityManager.getCurrentUser();
+                if (currentUser != getProfileParentId(userId)) {
+                    // Cache will automatically be updated on user switch
+                    if (VDBG) Log.d(TAG, "Ignoring package change intent from non-current user");
+                    return;
+                }
+                if (!Utils.hasCeServicesWithValidPermissions(mContext, intent, userId)) {
+                    if (VDBG) Log.d(TAG, "Ignoring package change intent from non-CE app");
+                    return;
+                }
+                boolean replaced = intent.getBooleanExtra(Intent.EXTRA_REPLACING, false) &&
+                        (Intent.ACTION_PACKAGE_ADDED.equals(action) ||
+                                Intent.ACTION_PACKAGE_REMOVED.equals(action));
+                if (!replaced) {
+                    invalidateCache(UserHandle.getUserHandleForUid(uid).getIdentifier());
+                } else {
+                    if (DBG) Log.d(TAG,
+                            "Ignoring package intent due to package being replaced.");
                 }
             }
         };
