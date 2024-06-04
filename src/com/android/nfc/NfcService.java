@@ -470,6 +470,10 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
     private  INfcVendorNciCallback mNfcVendorNciCallBack = null;
     private  INfcOemExtensionCallback mNfcOemExtensionCallback = null;
 
+    private boolean mCardEmulationActivated = false;
+    private boolean mRfFieldActivated = false;
+    private boolean mRfDiscoveryStarted = false;
+
     public static NfcService getInstance() {
         return sService;
     }
@@ -484,6 +488,14 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
      */
     @Override
     public void onHostCardEmulationActivated(int technology) {
+        mCardEmulationActivated = true;
+        try {
+            if (mNfcOemExtensionCallback != null) {
+                mNfcOemExtensionCallback.onCardEmulationActivated(mCardEmulationActivated);
+            }
+        } catch (RemoteException e) {
+            Log.e(TAG, "Failed to send onHostCardEmulationActivated", e);
+        }
         if (mCardEmulationManager != null) {
             mCardEmulationManager.onHostCardEmulationActivated(technology);
             if (android.nfc.Flags.nfcPersistLog()) {
@@ -518,6 +530,14 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
 
     @Override
     public void onHostCardEmulationDeactivated(int technology) {
+        mCardEmulationActivated = false;
+        try {
+            if (mNfcOemExtensionCallback != null) {
+                mNfcOemExtensionCallback.onCardEmulationActivated(mCardEmulationActivated);
+            }
+        } catch (RemoteException e) {
+            Log.e(TAG, "Failed to send onHostCardEmulationDeactivated", e);
+        }
         if (mCardEmulationManager != null) {
             mCardEmulationManager.onHostCardEmulationDeactivated(technology);
             if (android.nfc.Flags.nfcPersistLog()) {
@@ -535,6 +555,14 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
 
     @Override
     public void onRemoteFieldActivated() {
+        mRfFieldActivated = true;
+        try {
+            if (mNfcOemExtensionCallback != null) {
+                mNfcOemExtensionCallback.onRfFieldActivated(mRfFieldActivated);
+            }
+        } catch (RemoteException e) {
+            Log.e(TAG, "Failed to send onRemoteFieldActivated", e);
+        }
         sendMessage(NfcService.MSG_RF_FIELD_ACTIVATED, null);
 
         if (mStatsdUtils != null) {
@@ -553,6 +581,14 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
 
     @Override
     public void onRemoteFieldDeactivated() {
+        mRfFieldActivated = false;
+        try {
+            if (mNfcOemExtensionCallback != null) {
+                mNfcOemExtensionCallback.onRfFieldActivated(mRfFieldActivated);
+            }
+        } catch (RemoteException e) {
+            Log.e(TAG, "Failed to send onRemoteFieldDeactivated", e);
+        }
         sendMessage(NfcService.MSG_RF_FIELD_DEACTIVATED, null);
 
         if (mStatsdUtils != null) {
@@ -612,6 +648,18 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
     public void onObserveModeStateChanged(boolean enable) {
         if (mCardEmulationManager != null) {
             mCardEmulationManager.onObserveModeStateChange(enable);
+        }
+    }
+
+    @Override
+    public void onRfDiscoveryEvent(boolean isDiscoveryStarted) {
+        mRfDiscoveryStarted = isDiscoveryStarted;
+        try {
+            if (mNfcOemExtensionCallback != null) {
+                mNfcOemExtensionCallback.onRfDiscoveryStarted(mRfDiscoveryStarted);
+            }
+        } catch (RemoteException e) {
+            Log.e(TAG, "Failed to send onRfDiscoveryStarted", e);
         }
     }
 
@@ -2764,6 +2812,7 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
             if (DBG) Log.i(TAG, "Register the oem extension callback");
             NfcPermissions.enforceAdminPermissions(mContext);
             mNfcOemExtensionCallback = callbacks;
+            updateNfCState();
         }
 
         @Override
@@ -2818,6 +2867,19 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
                 Log.i(TAG, "OEM executing delayed boot");
                 mAlarmManager.cancel(mDelayedBootAlarmListener);
                 mDelayedBootAlarmListener.onAlarm();
+            }
+        }
+
+        private void updateNfCState() {
+            if (mNfcOemExtensionCallback != null) {
+                try {
+                    if (DBG) Log.i(TAG, "updateNfCState");
+                    mNfcOemExtensionCallback.onCardEmulationActivated(mCardEmulationActivated);
+                    mNfcOemExtensionCallback.onRfFieldActivated(mRfFieldActivated);
+                    mNfcOemExtensionCallback.onRfDiscoveryStarted(mRfDiscoveryStarted);
+                } catch (RemoteException e) {
+                    Log.e(TAG, "Failed to update OemExtension with updateNfCState", e);
+                }
             }
         }
 
