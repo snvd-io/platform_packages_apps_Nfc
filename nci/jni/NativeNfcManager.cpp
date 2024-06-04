@@ -84,7 +84,8 @@ bool gActivated = false;
 SyncEvent gDeactivatedEvent;
 SyncEvent sNfaSetPowerSubState;
 int recovery_option = 0;
-int nfcee_power_and_link_conf = 0;
+int always_on_nfcee_power_and_link_conf = 0;
+int disable_always_on_nfcee_power_and_link_conf = 0;
 
 namespace android {
 jmethodID gCachedNfcManagerNotifyNdefMessageListeners;
@@ -195,11 +196,19 @@ void initializeRecoveryOption() {
 }
 
 void initializeNfceePowerAndLinkConf() {
-  nfcee_power_and_link_conf =
+  always_on_nfcee_power_and_link_conf =
       NfcConfig::getUnsigned(NAME_ALWAYS_ON_SET_EE_POWER_AND_LINK_CONF, 0);
 
   LOG(DEBUG) << __func__ << ": Always on set NFCEE_POWER_AND_LINK_CONF="
-             << nfcee_power_and_link_conf;
+             << always_on_nfcee_power_and_link_conf;
+}
+
+void initializeDisableAlwaysOnNfceePowerAndLinkConf() {
+  disable_always_on_nfcee_power_and_link_conf = NfcConfig::getUnsigned(
+      NAME_DISABLE_ALWAYS_ON_SET_EE_POWER_AND_LINK_CONF, 0);
+
+  LOG(DEBUG) << __func__ << ": Always on set NFCEE_POWER_AND_LINK_CONF="
+             << disable_always_on_nfcee_power_and_link_conf;
 }
 
 }  // namespace
@@ -572,6 +581,7 @@ static jboolean nfcManager_initNativeStruc(JNIEnv* e, jobject o) {
   initializeGlobalDebugEnabledFlag();
   initializeRecoveryOption();
   initializeNfceePowerAndLinkConf();
+  initializeDisableAlwaysOnNfceePowerAndLinkConf();
   LOG(DEBUG) << StringPrintf("%s: enter", __func__);
 
   nfc_jni_native_data* nat =
@@ -1944,9 +1954,11 @@ static void nfcManager_doSetNfceePowerAndLinkCtrl(JNIEnv* e, jobject o,
                                                   jboolean enable) {
   RoutingManager& routingManager = RoutingManager::getInstance();
   if (enable) {
-    routingManager.eeSetPwrAndLinkCtrl((uint8_t)nfcee_power_and_link_conf);
+    routingManager.eeSetPwrAndLinkCtrl(
+        (uint8_t)always_on_nfcee_power_and_link_conf);
   } else {
-    routingManager.eeSetPwrAndLinkCtrl(0);
+    routingManager.eeSetPwrAndLinkCtrl(
+        (uint8_t)disable_always_on_nfcee_power_and_link_conf);
   }
 }
 
