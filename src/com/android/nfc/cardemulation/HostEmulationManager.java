@@ -227,7 +227,7 @@ public class HostEmulationManager {
         synchronized (mLock) {
             if (mState == STATE_IDLE || mState == STATE_POLLING_LOOP) {
                 NfcAdapter adapter = NfcAdapter.getDefaultAdapter(mContext);
-                mHandler.post(() -> adapter.setObserveModeEnabled(enabled));
+                adapter.setObserveModeEnabled(enabled);
             } else {
                 mEnableObserveModeAfterTransaction = enabled;
             }
