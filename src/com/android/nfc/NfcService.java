@@ -749,7 +749,11 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
         }
         mAlarmManager = mContext.getSystemService(AlarmManager.class);
 
-        mScreenState = mScreenStateHelper.checkScreenState();
+        if (mInProvisionMode) {
+            mScreenState = mScreenStateHelper.checkScreenStateProvisionMode();
+        } else {
+            mScreenState = mScreenStateHelper.checkScreenState();
+        }
 
         mBackupManager = mNfcInjector.getBackupManager();
 
@@ -1292,7 +1296,11 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
 
             initSoundPool();
 
-            mScreenState = mScreenStateHelper.checkScreenState();
+            if (mInProvisionMode) {
+                mScreenState = mScreenStateHelper.checkScreenStateProvisionMode();
+            } else {
+                mScreenState = mScreenStateHelper.checkScreenState();
+            }
             int screen_state_mask = (mNfcUnlockManager.isLockscreenPollingEnabled()) ?
                              (ScreenStateHelper.SCREEN_POLLING_TAG_MASK | mScreenState) : mScreenState;
 
