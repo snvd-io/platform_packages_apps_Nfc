@@ -33,7 +33,6 @@ import android.nfc.cardemulation.CardEmulation;
 import android.nfc.cardemulation.HostApduService;
 import android.nfc.cardemulation.PollingFrame;
 import android.nfc.cardemulation.Utils;
-import android.os.Binder;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
@@ -45,6 +44,7 @@ import android.os.RemoteException;
 import android.os.UserHandle;
 import android.sysprop.NfcProperties;
 import android.util.Log;
+import android.util.Pair;
 import android.util.proto.ProtoOutputStream;
 
 import androidx.annotation.VisibleForTesting;
@@ -228,12 +228,7 @@ public class HostEmulationManager {
         synchronized (mLock) {
             if (mState == STATE_IDLE || mState == STATE_POLLING_LOOP) {
                 NfcAdapter adapter = NfcAdapter.getDefaultAdapter(mContext);
-                long token = Binder.clearCallingIdentity();
-                try {
-                    adapter.setObserveModeEnabled(enabled);
-                } finally {
-                    Binder.restoreCallingIdentity(token);
-                }
+                adapter.setObserveModeEnabled(enabled);
             } else {
                 mEnableObserveModeAfterTransaction = enabled;
             }
@@ -401,12 +396,7 @@ public class HostEmulationManager {
         Log.d(TAG, "disabling observe mode for one transaction.");
         mEnableObserveModeAfterTransaction = true;
         NfcAdapter adapter = NfcAdapter.getDefaultAdapter(mContext);
-        long token = Binder.clearCallingIdentity();
-        try {
-            adapter.setObserveModeEnabled(false);
-        } finally {
-            Binder.restoreCallingIdentity(token);
-        }
+        mHandler.post(() -> adapter.setObserveModeEnabled(false));
     }
 
     /**
@@ -436,12 +426,7 @@ public class HostEmulationManager {
             mEnableObserveModeAfterTransaction = false;
             mEnableObserveModeOnFieldOff = false;
             NfcAdapter adapter = NfcAdapter.getDefaultAdapter(mContext);
-            long token = Binder.clearCallingIdentity();
-            try {
-                adapter.setObserveModeEnabled(true);
-            } finally {
-                Binder.restoreCallingIdentity(token);
-            }
+            mHandler.post(() -> adapter.setObserveModeEnabled(true));
         }
     }
 
@@ -688,12 +673,7 @@ public class HostEmulationManager {
                 Log.d(TAG, "re-enabling observe mode after HCE deactivation");
                 mEnableObserveModeAfterTransaction = false;
                 NfcAdapter adapter = NfcAdapter.getDefaultAdapter(mContext);
-                long token = Binder.clearCallingIdentity();
-                try {
-                    adapter.setObserveModeEnabled(true);
-                } finally {
-                    Binder.restoreCallingIdentity(token);
-                }
+                mHandler.post(() -> adapter.setObserveModeEnabled(true));
             }
 
             if (mStatsdUtils != null) {
@@ -730,10 +710,23 @@ public class HostEmulationManager {
             Log.e(TAG, "service ComponentName is null");
             return null;
         }
+
+        Pair<Integer, ComponentName> preferredPaymentService =
+                mAidCache.getPreferredPaymentService();
+        int preferredPaymentUserId = preferredPaymentService.first  != null ?
+                preferredPaymentService.first : -1;
+        ComponentName preferredPaymentServiceName = preferredPaymentService.second;
+
         if (mPaymentServiceName != null && mPaymentServiceName.equals(service)
                 && mPaymentServiceUserId == userId) {
             Log.d(TAG, "Service already bound as payment service.");
             return mPaymentService;
+        } else if (!mPaymentServiceBound && preferredPaymentServiceName != null
+                && preferredPaymentServiceName.equals(service)
+                && preferredPaymentUserId == userId) {
+            Log.d(TAG, "Service should be bound as payment service but is not, binding now");
+            bindPaymentServiceLocked(userId, preferredPaymentServiceName);
+            return null;
         } else if (mServiceName != null && mServiceName.equals(service)
                 && mServiceUserId == userId) {
             Log.d(TAG, "Service already bound as regular service.");
@@ -953,6 +946,14 @@ public class HostEmulationManager {
             synchronized (mLock) {
                 mPaymentService = null;
                 mPaymentServiceName = null;
+            }
+        }
+
+        @Override
+        public void onBindingDied(ComponentName name) {
+            Log.i(TAG, "Payment service died: " + name);
+            synchronized (mLock) {
+                bindPaymentServiceLocked(mPaymentServiceUserId, mLastBoundPaymentServiceName);
             }
         }
     };
