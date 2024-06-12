@@ -2648,6 +2648,20 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
             // TODO: Implement this.
         }
 
+        @Override
+        public void setScreenState() throws RemoteException {
+            if (DBG) Log.i(TAG, "setScreenState");
+            NfcPermissions.enforceAdminPermissions(mContext);
+            applyScreenState(mScreenStateHelper.checkScreenState());
+        }
+
+        @Override
+        public void checkFirmware() throws RemoteException {
+            if (DBG) Log.i(TAG, "checkFirmware");
+            NfcPermissions.enforceAdminPermissions(mContext);
+            mDeviceHost.checkFirmware();
+        }
+
         // TODO(b/321304762): Add the OEM extension API.
         public void allowBoot() throws RemoteException {
             if (DBG) Log.i(TAG, "allowBoot");
