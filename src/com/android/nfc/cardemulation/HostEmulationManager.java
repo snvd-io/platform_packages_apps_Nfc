@@ -125,6 +125,7 @@ public class HostEmulationManager {
     ComponentName mServiceName = null;
     int mServiceUserId; // The UserId of the non-payment service
     ArrayList<PollingFrame> mPendingPollingLoopFrames = null;
+    ArrayList<PollingFrame> mUnprocessedPollingFrames = null;
     Map<ComponentName, ArrayList<PollingFrame>> mPollingFramesToSend = null;
     private Map<Integer, Map<String, List<ApduServiceInfo>>> mPollingLoopFilters;
     private Map<Integer, Map<Pattern, List<ApduServiceInfo>>> mPollingLoopPatternFilters;
@@ -293,6 +294,7 @@ public class HostEmulationManager {
         if (service != null) {
             sendPollingFramesToServiceLocked(service, new ArrayList<>(frames));
         } else {
+            mUnprocessedPollingFrames = new ArrayList<PollingFrame>();
             if (mPollingFramesToSend == null) {
                 mPollingFramesToSend = new HashMap<ComponentName, ArrayList<PollingFrame>>();
             }
@@ -328,7 +330,9 @@ public class HostEmulationManager {
                 mPendingPollingLoopFrames = new ArrayList<PollingFrame>(1);
             }
             for (PollingFrame pollingFrame : pollingFrames) {
-                if (pollingFrame.getType()
+                if (mUnprocessedPollingFrames != null) {
+                    mUnprocessedPollingFrames.add(pollingFrame);
+                } else if (pollingFrame.getType()
                         == PollingFrame.POLLING_LOOP_TYPE_F) {
                     Pair<Messenger, ComponentName> serviceAndName =
                         getForegroundServiceAndNameOrDefault();
@@ -1040,6 +1044,12 @@ public class HostEmulationManager {
                 } else if (mPollingFramesToSend != null && mPollingFramesToSend.containsKey(name)) {
                     sendPollingFramesToServiceLocked(mService, mPollingFramesToSend.get(name));
                     mPollingFramesToSend.remove(name);
+                    if (android.nfc.Flags.nfcReadPollingLoop()
+                        && mUnprocessedPollingFrames != null) {
+                        ArrayList unprocessedPollingFrames = mUnprocessedPollingFrames;
+                        mUnprocessedPollingFrames = null;
+                        onPollingLoopDetected(unprocessedPollingFrames);
+                    }
                 } else {
                     Log.d(TAG, "bound with nothing to send");
                 }
