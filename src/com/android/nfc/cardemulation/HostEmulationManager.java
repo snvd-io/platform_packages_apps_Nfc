@@ -807,6 +807,7 @@ public class HostEmulationManager {
             mActiveService.send(msg);
         } catch (RemoteException e) {
             Log.e(TAG, "Remote service " + mActiveServiceName + " has died, dropping frames", e);
+            allowOneTransaction();
         }
     }
 
