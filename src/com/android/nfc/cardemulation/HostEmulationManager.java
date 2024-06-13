@@ -446,9 +446,11 @@ public class HostEmulationManager {
                     sendFramesToServiceLocked(serviceAndName.first, serviceAndName.second,
                         mPendingPollingLoopFrames);
                     mPendingPollingLoopFrames = null;
+                } else {
+                    Log.i(TAG, "No preferred service to deliver polling frames to,"
+                    + " allowing transaction.");
+                    allowOneTransaction();
                 }
-            } else {
-                Log.d(TAG, "Dropping polling frames, no service available");
             }
         }
     }
