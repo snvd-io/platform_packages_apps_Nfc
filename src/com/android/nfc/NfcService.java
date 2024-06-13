@@ -1783,6 +1783,12 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
                     return false;
                 }
             }
+
+            if (mCardEmulationManager.isHostCardEmulationActivated()) {
+                Log.w(TAG, "setObserveMode: Cannot set observe mode during a transaction.");
+                return false;
+            }
+
             Log.d(TAG, "setObserveMode: package " + packageName + " with UID (" + callingUid
                     + ") setting observe mode to " + enable);
 

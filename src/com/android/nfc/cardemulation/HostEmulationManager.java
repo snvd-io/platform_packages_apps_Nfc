@@ -207,7 +207,7 @@ public class HostEmulationManager {
     public void onPreferredPaymentServiceChanged(int userId, final ComponentName service) {
         mHandler.post(() -> {
             synchronized (mLock) {
-                if (mState == STATE_IDLE || mState == STATE_POLLING_LOOP) {
+                if (!isHostCardEmulationActivated()) {
                     Log.d(TAG, "onPreferredPaymentServiceChanged, resetting active service");
                     resetActiveService();
                 }
@@ -247,7 +247,7 @@ public class HostEmulationManager {
     @FlaggedApi(android.nfc.Flags.FLAG_NFC_OBSERVE_MODE)
     public void updateForShouldDefaultToObserveMode(boolean enabled) {
         synchronized (mLock) {
-            if (mState == STATE_IDLE || mState == STATE_POLLING_LOOP) {
+            if (!isHostCardEmulationActivated()) {
                 NfcAdapter adapter = NfcAdapter.getDefaultAdapter(mContext);
                 adapter.setObserveModeEnabled(enabled);
             } else {
@@ -467,7 +467,7 @@ public class HostEmulationManager {
      */
     public void onPreferredForegroundServiceChanged(int userId, ComponentName service) {
         synchronized (mLock) {
-            if (mState == STATE_IDLE || mState == STATE_POLLING_LOOP) {
+            if (!isHostCardEmulationActivated()) {
                 Log.d(TAG, "onPreferredForegroundServiceChanged, resetting active service");
                 resetActiveService();
             }
@@ -484,7 +484,7 @@ public class HostEmulationManager {
         if (!fieldOn) {
             mHandler.postDelayed(mReturnToIdleStateRunnable, FIELD_OFF_IDLE_DELAY_MS);
         }
-        if (!fieldOn && mEnableObserveModeOnFieldOff &&  mEnableObserveModeAfterTransaction) {
+        if (!fieldOn && mEnableObserveModeOnFieldOff && mEnableObserveModeAfterTransaction) {
             Log.d(TAG, "re-enabling observe mode after NFC Field off.");
             mEnableObserveModeAfterTransaction = false;
             mEnableObserveModeOnFieldOff = false;
@@ -744,6 +744,12 @@ public class HostEmulationManager {
             if (mStatsdUtils != null) {
                 mStatsdUtils.logCardEmulationDeactivatedEvent();
             }
+        }
+    }
+
+    public boolean isHostCardEmulationActivated() {
+        synchronized (mLock) {
+            return mState != STATE_IDLE && mState != STATE_POLLING_LOOP;
         }
     }
 
