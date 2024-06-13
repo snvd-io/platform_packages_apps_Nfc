@@ -1749,9 +1749,11 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
                         UserHandle.getUserHandleForUid(callingUid).getIdentifier())) {
                     if (android.permission.flags.Flags.walletRoleEnabled()) {
                         UserHandle user = Binder.getCallingUserHandle();
-                        triggerSource = packageName.equals(getWalletRoleHolder(user))
-                            ? NFC_OBSERVE_MODE_STATE_CHANGED__TRIGGER_SOURCE__WALLET_ROLE_HOLDER
-                            : NFC_OBSERVE_MODE_STATE_CHANGED__TRIGGER_SOURCE__FOREGROUND_APP;
+                        if (packageName != null) {
+                            triggerSource = packageName.equals(getWalletRoleHolder(user))
+                                ? NFC_OBSERVE_MODE_STATE_CHANGED__TRIGGER_SOURCE__WALLET_ROLE_HOLDER
+                                : NFC_OBSERVE_MODE_STATE_CHANGED__TRIGGER_SOURCE__FOREGROUND_APP;
+                        }
                     } else {
                         if (mForegroundUtils.isInForeground(callingUid)) {
                             triggerSource =
@@ -1763,6 +1765,8 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
                     return false;
                 }
             }
+            Log.d(TAG, "setObserveMode: package " + packageName + " with UID (" + callingUid
+                    + ") setting observe mode to " + enable);
 
             long start = SystemClock.elapsedRealtime();
             boolean result = mDeviceHost.setObserveMode(enable);
