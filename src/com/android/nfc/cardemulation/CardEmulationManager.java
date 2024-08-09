@@ -1083,12 +1083,6 @@ public class CardEmulationManager implements RegisteredServicesCache.Callback,
                 Log.d(TAG, "observe mode isn't enabled");
                 return;
             }
-
-            NfcAdapter adapter = NfcAdapter.getDefaultAdapter(mContext);
-            if (adapter == null) {
-                Log.e(TAG, "adapter is null, returning");
-                return;
-            }
             ComponentName preferredService = mAidCache.getPreferredService().second;
             boolean enableObserveMode = mServiceCache.doesServiceShouldDefaultToObserveMode(userId,
                     preferredService);
