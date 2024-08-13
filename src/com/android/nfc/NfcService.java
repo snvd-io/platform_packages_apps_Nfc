@@ -4827,4 +4827,9 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
             throw e;
         }
     }
+
+    @VisibleForTesting
+    public Handler getHandler() {
+        return mHandler;
+    }
 }
