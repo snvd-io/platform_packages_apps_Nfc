@@ -4374,7 +4374,7 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
                     }
                 }
                 int dispatchResult = mNfcDispatcher.dispatchTag(tag);
-                if (dispatchResult == NfcDispatcher.DISPATCH_FAIL && !mInProvisionMode) {
+                if (dispatchResult == NfcDispatcher.DISPATCH_FAIL) {
                     if (DBG) Log.d(TAG, "Tag dispatch failed");
                     unregisterObject(tagEndpoint.getHandle());
                     if (mPollDelayTime > NO_POLL_DELAY) {
@@ -4383,7 +4383,8 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
                     } else {
                         Log.d(TAG, "Keep presence checking.");
                     }
-                    if (mScreenState == ScreenStateHelper.SCREEN_STATE_ON_UNLOCKED && mNotifyDispatchFailed) {
+                    if (mScreenState == ScreenStateHelper.SCREEN_STATE_ON_UNLOCKED
+                            && mNotifyDispatchFailed && !mInProvisionMode) {
                         if (!sToast_debounce) {
                             Toast.makeText(mContext, R.string.tag_dispatch_failed,
                                            Toast.LENGTH_SHORT).show();
