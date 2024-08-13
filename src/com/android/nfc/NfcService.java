@@ -122,6 +122,7 @@ import java.io.FileDescriptor;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;
 import java.nio.file.Files;
@@ -4658,7 +4659,7 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
             }
 
             fos = new FileOutputStream(file, true);
-            mDeviceHost.dump(fos.getFD());
+            mDeviceHost.dump(new PrintWriter(new StringWriter()), fos.getFD());
             fos.flush();
         } catch (IOException e) {
             Log.e(TAG, "Exception in storeNativeCrashLogs " + e);
@@ -4742,6 +4743,8 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
             pw.println("SnoopLogMode=" + NFC_SNOOP_LOG_MODE);
             pw.println("VendorDebugEnabled=" + NFC_VENDOR_DEBUG_ENABLED);
             pw.println("mIsPowerSavingModeEnabled=" + mIsPowerSavingModeEnabled);
+            pw.println("mIsObserveModeSupported=" + mNfcAdapter.isObserveModeSupported());
+            pw.println("mIsObserveModeEnabled=" + mNfcAdapter.isObserveModeEnabled());
             pw.println(mCurrentDiscoveryParameters);
             if (mIsHceCapable) {
                 mCardEmulationManager.dump(fd, pw, args);
@@ -4754,7 +4757,7 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
             mNfcInjector.getNfcEventLog().dump(fd, pw, args);
             copyNativeCrashLogsIfAny(pw);
             pw.flush();
-            mDeviceHost.dump(fd);
+            mDeviceHost.dump(pw,fd);
         }
     }
 
