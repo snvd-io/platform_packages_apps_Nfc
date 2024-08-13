@@ -2558,7 +2558,7 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
         }
 
         @Override
-        public boolean enableReaderOption(boolean enable) {
+        public boolean enableReaderOption(boolean enable, String pkg) {
             Log.d(TAG, "enableReaderOption enabled=" + enable);
             if (!mReaderOptionCapable) return false;
             NfcPermissions.enforceAdminPermissions(mContext);
@@ -2575,6 +2575,11 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
                                 .setReaderOptionChange(
                                         NfcEventProto.NfcReaderOptionChange.newBuilder()
                                                 .setEnable(enable)
+                                                .setAppInfo(
+                                                        NfcEventProto.NfcAppInfo.newBuilder()
+                                                    .setPackageName(pkg)
+                                                    .setUid(Binder.getCallingUid())
+                                                    .build())
                                                 .build())
                                 .build());
             }
