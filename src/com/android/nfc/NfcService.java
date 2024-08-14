@@ -1037,7 +1037,8 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
         mIsHceFCapable =
                 pm.hasSystemFeature(PackageManager.FEATURE_NFC_HOST_CARD_EMULATION_NFCF);
         if (mIsHceCapable) {
-            mCardEmulationManager = new CardEmulationManager(mContext, mNfcInjector);
+            mCardEmulationManager =
+                new CardEmulationManager(mContext, mNfcInjector, mDeviceConfigFacade);
         }
         mForegroundUtils = mNfcInjector.getForegroundUtils();
         mIsSecureNfcCapable = mDeviceConfigFacade.isSecureNfcCapable();
