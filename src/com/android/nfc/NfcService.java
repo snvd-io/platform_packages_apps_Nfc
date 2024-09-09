@@ -505,6 +505,9 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
 
     private static final int ACTION_ON_ENABLE = 0;
     private static final int ACTION_ON_DISABLE = 1;
+    private static final int ACTION_ON_TAG_DISPATCH = 2;
+    private static final int ACTION_ON_READ_NDEF = 3;
+    private static final int ACTION_ON_APPLY_ROUTING = 4;
 
     public static NfcService getInstance() {
         return sService;
@@ -874,6 +877,15 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
                     break;
                 case ACTION_ON_DISABLE:
                     mNfcOemExtensionCallback.onDisable(receiver);
+                    break;
+                case ACTION_ON_TAG_DISPATCH:
+                    mNfcOemExtensionCallback.onTagDispatch(receiver);
+                    break;
+                case ACTION_ON_READ_NDEF:
+                    mNfcOemExtensionCallback.onNdefRead(receiver);
+                    break;
+                case ACTION_ON_APPLY_ROUTING:
+                    mNfcOemExtensionCallback.onApplyRouting(receiver);
                     break;
             }
         } catch (RemoteException remoteException) {
@@ -3741,6 +3753,11 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
             if (!isNfcEnabledOrShuttingDown()) {
                 return;
             }
+            if(mNfcOemExtensionCallback != null
+                   && receiveOemCallbackResult(ACTION_ON_APPLY_ROUTING)) {
+                Log.d(TAG, "applyRouting: skip due to oem callback");
+                return;
+            }
             if (mInProvisionMode) {
                 mInProvisionMode = Settings.Global.getInt(mContentResolver,
                         Settings.Global.DEVICE_PROVISIONED, 0) == 0;
@@ -4154,6 +4171,12 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
                             };
                     synchronized (NfcService.this) {
                         readerParams = mReaderModeParams;
+                    }
+                    if (mNfcOemExtensionCallback != null
+                            && receiveOemCallbackResult(ACTION_ON_READ_NDEF)) {
+                        Log.d(TAG, "MSG_NDEF_TAG: skip due to oem callback");
+                        tag.startPresenceChecking(presenceCheckDelay, callback);
+                        break;
                     }
                     if (readerParams != null) {
                         presenceCheckDelay = readerParams.presenceCheckDelay;
@@ -4642,6 +4665,11 @@ public class NfcService implements DeviceHostListener, ForegroundUtils.Callback 
         }
 
         private void dispatchTagEndpoint(TagEndpoint tagEndpoint, ReaderModeParams readerParams) {
+            if (mNfcOemExtensionCallback != null
+                    && receiveOemCallbackResult(ACTION_ON_TAG_DISPATCH)) {
+                Log.d(TAG, "dispatchTagEndpoint: skip due to oem callback");
+                return;
+            }
             try {
                 /* Avoid setting mCookieUpToDate to negative values */
                 mCookieUpToDate = mCookieGenerator.nextLong() >>> 1;
