@@ -756,13 +756,13 @@ public final class NfcServiceTest {
         INfcOemExtensionCallback callback = mock(INfcOemExtensionCallback.class);
         mNfcService.mNfcAdapter.registerOemExtensionCallback(callback);
         doAnswer(new Answer() {
-                     @Override
-                     public Void answer(InvocationOnMock invocation) throws Throwable {
-                         ResultReceiver r = invocation.getArgument(0);
-                         r.send(1, null);
-                         return null;
-                     }
-                 }).when(callback).onEnable(any(ResultReceiver.class));
+            @Override
+            public Void answer(InvocationOnMock invocation) throws Throwable {
+                ResultReceiver r = invocation.getArgument(0);
+                r.send(1, null);
+                return null;
+            }
+        }).when(callback).onEnable(any(ResultReceiver.class));
         enableAndVerify();
         verify(callback).onEnable(any());
     }
